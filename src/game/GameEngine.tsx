@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getArea, Area, getMapData, setMapData } from './map/map';
 import Inventory from './inventory/Inventory';
 import { Item } from './inventory/inventoryTypes';
+import StatPanel from './ui/StatPanel';
 
 interface Character {
   name: string;
@@ -12,6 +13,10 @@ interface Character {
   wisdom: number;
   endurance: number;
   charisma: number;
+  level: number;
+  xp: number;
+  currentHp: number;
+  currentMp: number;
 }
 
 interface Props {
@@ -24,15 +29,30 @@ const GameEngine = ({ character }: Props) => {
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
   const [inventory, setInventory] = useState<Item[]>([]);
+  const calculatedLevel = character.level || 1;
+  const maxHp = character.endurance * 10 + calculatedLevel * 5;
+  const maxMp = character.wisdom * 10 + calculatedLevel * 5;
+
+  const [player, setPlayer] = useState<Character>(() => ({
+    ...character,
+    level: calculatedLevel,
+    xp: character.xp || 0,
+    currentHp: character.currentHp ?? maxHp,
+    currentMp: character.currentMp ?? maxMp,
+  }));
+
+
+  const nextLevelXp = player.level * 100;
 
   useEffect(() => {
     const saved = localStorage.getItem('gameSave');
     if (saved) {
-      const { pos, map, inventory: inv } = JSON.parse(saved);
+      const { pos, map, inventory: inv, player: savedPlayer } = JSON.parse(saved);
       setMapData(map);
       setCurrentPos(pos);
       setArea(getArea(pos.x, pos.y));
       if (inv) setInventory(inv);
+      if (savedPlayer) setPlayer(savedPlayer);
     }
   }, []);
 
@@ -70,11 +90,23 @@ const GameEngine = ({ character }: Props) => {
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < npc.radius) {
           setDialog(npc.dialog);
-          // Simulate item reward
+
+          // Reward XP + Item
+          const xpGain = 25 + Math.floor(player.intelligence / 2);
+          const newXp = player.xp + xpGain;
+          const levelUp = newXp >= nextLevelXp;
+          setPlayer(prev => ({
+            ...prev,
+            xp: levelUp ? newXp - nextLevelXp : newXp,
+            level: levelUp ? prev.level + 1 : prev.level,
+            currentHp: levelUp ? maxHp : prev.currentHp,
+            currentMp: levelUp ? maxMp : prev.currentMp,
+          }));
+
           const newItem: Item = {
             id: Date.now().toString(),
-            name: 'Mystic Leaf',
-            description: 'A shimmering leaf from an ancient tree.',
+            name: 'Mystic Shard',
+            description: 'A fragment pulsing with energy.',
             type: 'quest',
           };
           setInventory(prev => [...prev, newItem]);
@@ -90,7 +122,7 @@ const GameEngine = ({ character }: Props) => {
     draw();
     canvas.addEventListener('click', handleClick);
     return () => canvas.removeEventListener('click', handleClick);
-  }, [area]);
+  }, [area, player]);
 
   const move = (dir: 'north' | 'south' | 'east' | 'west') => {
     const { x, y } = currentPos;
@@ -113,6 +145,7 @@ const GameEngine = ({ character }: Props) => {
       pos: currentPos,
       map: getMapData(),
       inventory,
+      player,
     };
     localStorage.setItem('gameSave', JSON.stringify(saveData));
     alert('Game saved!');
@@ -126,6 +159,7 @@ const GameEngine = ({ character }: Props) => {
       setCurrentPos(parsed.pos);
       setArea(getArea(parsed.pos.x, parsed.pos.y));
       if (parsed.inventory) setInventory(parsed.inventory);
+      if (parsed.player) setPlayer(parsed.player);
       setDialog('Game loaded!');
     } else {
       alert('No saved game found!');
@@ -183,7 +217,7 @@ const GameEngine = ({ character }: Props) => {
         )}
       </div>
 
-      {/* Character Profile & Inventory */}
+      {/* Profile, Stats, Inventory */}
       <div style={{
         minWidth: '240px',
         color: 'white',
@@ -191,18 +225,19 @@ const GameEngine = ({ character }: Props) => {
         padding: '1rem',
         borderRadius: '8px'
       }}>
-        <h3 style={{ marginTop: 0 }}>{character.name}</h3>
+        <h3 style={{ marginTop: 0 }}>{player.name}</h3>
         <div style={{ width: '100%', height: '120px', backgroundColor: '#333', borderRadius: '4px', marginBottom: '1rem' }}>
           <p style={{ textAlign: 'center', paddingTop: '40px', color: '#bbb' }}>Portrait</p>
         </div>
-        <p><strong>STR:</strong> {character.strength}</p>
-        <p><strong>DEX:</strong> {character.dexterity}</p>
-        <p><strong>INT:</strong> {character.intelligence}</p>
-        <p><strong>WIS:</strong> {character.wisdom}</p>
-        <p><strong>END:</strong> {character.endurance}</p>
-        <p><strong>CHA:</strong> {character.charisma}</p>
-
-        {/* Inventory Panel */}
+        <StatPanel
+          currentHp={player.currentHp}
+          maxHp={maxHp}
+          currentMp={player.currentMp}
+          maxMp={maxMp}
+          level={player.level}
+          xp={player.xp}
+          nextLevelXp={nextLevelXp}
+        />
         <Inventory items={inventory} onRemove={handleRemoveItem} />
       </div>
     </div>
