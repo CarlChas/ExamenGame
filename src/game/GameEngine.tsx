@@ -3,21 +3,7 @@ import { getArea, Area, getMapData, setMapData } from './map/map';
 import Inventory from './inventory/Inventory';
 import { Item } from './inventory/inventoryTypes';
 import StatPanel from './ui/StatPanel';
-
-interface Character {
-  name: string;
-  color: string;
-  strength: number;
-  dexterity: number;
-  intelligence: number;
-  wisdom: number;
-  endurance: number;
-  charisma: number;
-  level: number;
-  xp: number;
-  currentHp: number;
-  currentMp: number;
-}
+import { Character } from './types/characterTypes'; // Adjust path as needed
 
 interface Props {
   character: Character;
