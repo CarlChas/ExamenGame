@@ -11,7 +11,8 @@ export interface NPC {
 export interface Area {
     name: string;
     npcs: NPC[];
-    coords: string; // for debug / tracking
+    coords: string;
+    event?: string; // ⬅️ add this line
 }
 
 const mapData = new Map<string, Area>();
