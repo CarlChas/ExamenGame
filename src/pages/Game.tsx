@@ -16,6 +16,7 @@ const Game = () => {
     const [wisdom, setWisdom] = useState(5);
     const [endurance, setEndurance] = useState(5);
     const [charisma, setCharisma] = useState(5);
+    const [luck, setLuck] = useState(5);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -48,7 +49,7 @@ const Game = () => {
     };
 
     const handleCreate = () => {
-        const newChar = { name, color, strength, dexterity, intelligence, wisdom, endurance, charisma };
+        const newChar = { name, color, strength, dexterity, intelligence, wisdom, endurance, charisma, luck };
         handleCharacterCreate(newChar);
     };
 
@@ -97,6 +98,10 @@ const Game = () => {
                 <div>
                     <label>Charisma: {charisma}</label>
                     <input type="range" min="1" max="10" value={charisma} onChange={(e) => setCharisma(+e.target.value)} />
+                </div>
+                <div>
+                    <label>Luck: {luck}</label>
+                    <input type="range" min="1" max="10" value={luck} onChange={(e) => setLuck(+e.target.value)} />
                 </div>
                 <button onClick={handleCreate}>Create</button>
                 <br />

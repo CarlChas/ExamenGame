@@ -3,11 +3,16 @@ import { getArea, Area, getMapData, setMapData } from './map/map';
 import Inventory from './inventory/Inventory';
 import { Item } from './inventory/inventoryTypes';
 import StatPanel from './ui/StatPanel';
-import { Character } from './types/characterTypes'; // Adjust path as needed
+import CharacterStats from './ui/CharacterStats';
+import { Character } from './types/characterTypes';
 
 interface Props {
   character: Character;
 }
+
+// 🧠 Utility functions
+const calculateMaxHp = (char: Character) => char.endurance * 10 + char.level * 5;
+const calculateMaxMp = (char: Character) => char.wisdom * 10 + char.level * 5;
 
 const GameEngine = ({ character }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -15,19 +20,19 @@ const GameEngine = ({ character }: Props) => {
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
   const [inventory, setInventory] = useState<Item[]>([]);
-  const calculatedLevel = character.level || 1;
-  const maxHp = character.endurance * 10 + calculatedLevel * 5;
-  const maxMp = character.wisdom * 10 + calculatedLevel * 5;
 
-  const [player, setPlayer] = useState<Character>(() => ({
-    ...character,
-    level: calculatedLevel,
-    xp: character.xp || 0,
-    currentHp: character.currentHp ?? maxHp,
-    currentMp: character.currentMp ?? maxMp,
-  }));
+  const [player, setPlayer] = useState<Character>(() => {
+    const level = character.level || 1;
+    const base = { ...character, level, xp: character.xp || 0 };
+    return {
+      ...base,
+      currentHp: character.currentHp ?? calculateMaxHp(base),
+      currentMp: character.currentMp ?? calculateMaxMp(base),
+    };
+  });
 
-
+  const maxHp = calculateMaxHp(player);
+  const maxMp = calculateMaxMp(player);
   const nextLevelXp = player.level * 100;
 
   useEffect(() => {
@@ -77,17 +82,19 @@ const GameEngine = ({ character }: Props) => {
         if (dist < npc.radius) {
           setDialog(npc.dialog);
 
-          // Reward XP + Item
+          // 🎁 Reward XP + Item
           const xpGain = 25 + Math.floor(player.intelligence / 2);
           const newXp = player.xp + xpGain;
           const levelUp = newXp >= nextLevelXp;
-          setPlayer(prev => ({
-            ...prev,
+
+          const updatedPlayer = {
+            ...player,
             xp: levelUp ? newXp - nextLevelXp : newXp,
-            level: levelUp ? prev.level + 1 : prev.level,
-            currentHp: levelUp ? maxHp : prev.currentHp,
-            currentMp: levelUp ? maxMp : prev.currentMp,
-          }));
+            level: levelUp ? player.level + 1 : player.level,
+            currentHp: levelUp ? calculateMaxHp({ ...player, level: player.level + 1 }) : player.currentHp,
+            currentMp: levelUp ? calculateMaxMp({ ...player, level: player.level + 1 }) : player.currentMp,
+          };
+          setPlayer(updatedPlayer);
 
           const newItem: Item = {
             id: Date.now().toString(),
@@ -158,6 +165,7 @@ const GameEngine = ({ character }: Props) => {
 
   return (
     <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center' }}>
+      <CharacterStats character={player} />
       <div>
         <h3 style={{ color: 'white', textAlign: 'center' }}>{area.name}</h3>
         <canvas
@@ -203,7 +211,7 @@ const GameEngine = ({ character }: Props) => {
         )}
       </div>
 
-      {/* Profile, Stats, Inventory */}
+      {/* Sidebar UI */}
       <div style={{
         minWidth: '240px',
         color: 'white',
