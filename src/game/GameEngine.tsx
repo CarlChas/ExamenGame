@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getArea, Area } from './map/map';
+import { getMapData, setMapData } from './map/map';
 
 interface Character {
   name: string;
@@ -22,6 +23,15 @@ const GameEngine = ({ character }: Props) => {
   const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('gameSave');
+    if (saved) {
+      const { pos } = JSON.parse(saved);
+      setCurrentPos(pos);
+      setArea(getArea(pos.x, pos.y));
+    }
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -90,10 +100,36 @@ const GameEngine = ({ character }: Props) => {
 
     if (newPos) {
       setCurrentPos(newPos);
-      setArea(getArea(newPos.x, newPos.y));
+      const newArea = getArea(newPos.x, newPos.y);
+      setArea(newArea);
       setDialog(null);
+      localStorage.setItem('gameSave', JSON.stringify({ pos: newPos }));
     }
   };
+
+  const handleSave = () => {
+    const saveData = {
+      pos: currentPos,
+      map: getMapData(),
+    };
+    localStorage.setItem('gameSave', JSON.stringify(saveData));
+    alert('Game saved!');
+  };
+
+  // Load game
+  const handleLoad = () => {
+    const saved = localStorage.getItem('gameSave');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setMapData(parsed.map);
+      setCurrentPos(parsed.pos);
+      setArea(getArea(parsed.pos.x, parsed.pos.y));
+      setDialog('Game loaded!');
+    } else {
+      alert('No saved game found!');
+    }
+  };
+
 
   return (
     <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center' }}>
@@ -119,6 +155,21 @@ const GameEngine = ({ character }: Props) => {
           <div />
           <button onClick={() => move('south')}>⬇️ South</button>
           <div />
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
+          <button onClick={handleSave}>💾 Save</button>
+          <button onClick={() => {
+            const saved = localStorage.getItem('gameSave');
+            if (saved) {
+              const { pos } = JSON.parse(saved);
+              setCurrentPos(pos);
+              setArea(getArea(pos.x, pos.y));
+              setDialog('Game loaded!');
+            } else {
+              alert('No saved game found!');
+            }
+          }}>📂 Load Game</button>
+
         </div>
         {dialog && (
           <div style={{
