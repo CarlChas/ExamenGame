@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Enemy } from './combatTypes';
-import { Character } from '../types/characterTypes';
+import { Character } from '../game/types/characterTypes';
 
 
 interface Props {
