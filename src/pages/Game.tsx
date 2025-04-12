@@ -44,6 +44,7 @@ const Game = () => {
 
 
 
+    // ✅ Don't store selected character in localStorage
     const handleCharacterCreate = async (char: any) => {
         const updatedUser = {
             ...user,
@@ -52,9 +53,7 @@ const Game = () => {
         setUser(updatedUser);
         setSelectedCharacter(char);
         setCreating(false);
-        localStorage.setItem('currentUser', updatedUser.username);
 
-        // Save to backend
         await fetch('http://localhost:3001/api/users/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -64,6 +63,7 @@ const Game = () => {
             }),
         });
     };
+
 
 
     const handleLogout = () => {
