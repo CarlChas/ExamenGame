@@ -78,6 +78,8 @@ const Game = () => {
     }
 
     if (creating) {
+        const totalAllocated = strength + dexterity + intelligence + wisdom + endurance + charisma + luck;
+        const canCreate = totalAllocated === maxPoints;
         return (
             <div>
                 <h2>Create Your Demigod</h2>
@@ -167,7 +169,13 @@ const Game = () => {
                     }} />
                 </div>
                 <p>Points remaining: {maxPoints - (strength + dexterity + intelligence + wisdom + endurance + charisma + luck)}</p>
-                <button onClick={handleCreate}>Create</button>
+                <button
+                    onClick={handleCreate}
+                    disabled={!canCreate}
+                    style={{ opacity: canCreate ? 1 : 0.5, cursor: canCreate ? 'pointer' : 'not-allowed' }}
+                >
+                    Create
+                </button>
                 <button onClick={handleLogout}>Log Out</button>
             </div>
         );
