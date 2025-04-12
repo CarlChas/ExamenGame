@@ -33,8 +33,6 @@ const Game = () => {
 
     const handleSelectCharacter = (char: any) => {
         setSelectedCharacter(char);
-        localStorage.setItem('selectedCharacter', JSON.stringify(char));
-
         const saveKey = `gameSave:${char.name}`;
         const exists = localStorage.getItem(saveKey);
         if (!exists) {
@@ -58,7 +56,7 @@ const Game = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: user.username,
-                characters: [...user.characters, char],
+                character: { ...char, pos: { x: 0, y: 0 }, map: {}, inventory: [] },
             }),
         });
 

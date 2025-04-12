@@ -89,4 +89,35 @@ router.get('/load/:username', async (req, res) => {
   res.json(user.characters);
 });
 
+// 💾 Save progress for a specific character
+router.post('/save-progress', async (req, res) => {
+  const { username, characterId, progress } = req.body;
+
+  if (!username || !characterId || !progress) {
+    return res.status(400).json({ error: 'Missing data' });
+  }
+
+  const user = await prisma.user.findUnique({ where: { username } });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  try {
+    const updated = await prisma.character.update({
+      where: { id: characterId },
+      data: {
+        pos: progress.pos,
+        map: progress.map,
+        inventory: progress.inventory,
+        currentHp: progress.currentHp,
+        currentMp: progress.currentMp,
+      },
+    });
+
+    res.json({ success: true, character: updated });
+  } catch (err) {
+    console.error('Error updating character:', err);
+    res.status(500).json({ error: 'Failed to save progress' });
+  }
+});
+
+
 export default router;

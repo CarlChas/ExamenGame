@@ -151,6 +151,41 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     alert('Game saved!');
   };
 
+  const handleLoad = async () => {
+    const username = localStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const res = await fetch(`http://localhost:3001/api/users/load/${username}`);
+      const characters = await res.json();
+      const updatedChar = characters.find((c: any) => c.id === player.id);
+
+      if (updatedChar) {
+        setCurrentPos(updatedChar.pos ?? { x: 0, y: 0 });
+        setInventory(updatedChar.inventory ?? []);
+        setMapData(updatedChar.map ?? {});
+        setArea(getArea(updatedChar.pos?.x ?? 0, updatedChar.pos?.y ?? 0));
+
+        setPlayer(prev => ({
+          ...prev,
+          currentHp: updatedChar.currentHp ?? prev.currentHp,
+          currentMp: updatedChar.currentMp ?? prev.currentMp,
+          xp: updatedChar.xp ?? prev.xp,
+          level: updatedChar.level ?? prev.level,
+        }));
+
+        setDialog('Progress loaded!');
+      } else {
+        alert('No saved data for this character!');
+      }
+    } catch (err) {
+      console.error('Failed to load character data:', err);
+      alert('Error loading character data');
+    }
+  };
+
+
+
   return (
     <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center' }}>
       <CharacterStats character={player} />
@@ -179,6 +214,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         </div>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
           <button onClick={handleSave}>💾 Save</button>
+          <button onClick={handleLoad}>📂 Load Game</button>
           <button onClick={onSwitchCharacter}>🔁 Switch Character</button>
         </div>
 
