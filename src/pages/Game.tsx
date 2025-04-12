@@ -10,6 +10,12 @@ const Game = () => {
     const [creating, setCreating] = useState(false);
     const navigate = useNavigate();
 
+    const fetchCharacters = async (username: string) => {
+        const res = await fetch(`http://localhost:3001/api/users/load/${username}`);
+        const characters = await res.json();
+        setUser({ username, characters });
+    };
+
     useEffect(() => {
         const stored = localStorage.getItem('currentUser');
         if (!stored) {
@@ -17,18 +23,12 @@ const Game = () => {
             return;
         }
 
-        const fetchCharacters = async () => {
-            const res = await fetch(`http://localhost:3001/api/users/load/${stored}`);
-            const characters = await res.json();
-            setUser({ username: stored, characters });
+        fetchCharacters(stored);
 
-            const selectedChar = localStorage.getItem('selectedCharacter');
-            if (selectedChar) {
-                setSelectedCharacter(JSON.parse(selectedChar));
-            }
-        };
-
-        fetchCharacters();
+        const selectedChar = localStorage.getItem('selectedCharacter');
+        if (selectedChar) {
+            setSelectedCharacter(JSON.parse(selectedChar));
+        }
     }, [navigate]);
 
     const handleSelectCharacter = (char: any) => {
@@ -39,7 +39,7 @@ const Game = () => {
         const exists = localStorage.getItem(saveKey);
         if (!exists) {
             const newSave = {
-                pos: { x: 0, y: 0 },
+                pos: { x: char.posX ?? 0, y: char.posY ?? 0 },
                 map: {},
                 inventory: [],
                 player: char,
@@ -48,32 +48,22 @@ const Game = () => {
         }
     };
 
-
     const handleCharacterCreate = async (char: any) => {
-        const updatedUser = {
-            ...user,
-            characters: [...user.characters, char],
-        };
+        setSelectedCharacter(char);
         setCreating(false);
         localStorage.setItem('selectedCharacter', JSON.stringify(char));
-        setSelectedCharacter(char);
 
-        // Save to backend
         await fetch('http://localhost:3001/api/users/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                username: updatedUser.username,
-                characters: updatedUser.characters,
+                username: user.username,
+                characters: [...user.characters, char],
             }),
         });
 
-        // 🔁 Fetch the latest character list again after saving
-        const res = await fetch(`http://localhost:3001/api/users/load/${updatedUser.username}`);
-        const characters = await res.json();
-        setUser({ username: updatedUser.username, characters });
+        fetchCharacters(user.username);
     };
-
 
     const handleLogout = () => {
         localStorage.removeItem('currentUser');
