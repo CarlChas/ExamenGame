@@ -31,20 +31,33 @@ const Game = () => {
         }
     }, [navigate]);
 
-    const handleSelectCharacter = (char: any) => {
-        setSelectedCharacter(char);
+    const handleSelectCharacter = async (char: any) => {
         const saveKey = `gameSave:${char.name}`;
-        const exists = localStorage.getItem(saveKey);
-        if (!exists) {
-            const newSave = {
-                pos: { x: char.posX ?? 0, y: char.posY ?? 0 },
-                map: {},
-                inventory: [],
-                player: char,
-            };
-            localStorage.setItem(saveKey, JSON.stringify(newSave));
-        }
+
+        // Try to load fresh progress from the database
+        const res = await fetch(`http://localhost:3001/api/users/load/${user.username}`);
+        const characters = await res.json();
+        const updated = characters.find((c: any) => c.name === char.name);
+
+        const loadedChar = {
+            ...updated,
+            pos: updated?.pos ?? { x: 0, y: 0 },
+            map: updated?.map ?? {},
+            inventory: updated?.inventory ?? [],
+            currentHp: updated?.currentHp ?? 10,
+            currentMp: updated?.currentMp ?? 10,
+        };
+
+        setSelectedCharacter(loadedChar);
+        localStorage.setItem('selectedCharacter', JSON.stringify(loadedChar));
+        localStorage.setItem(saveKey, JSON.stringify({
+            pos: loadedChar.pos,
+            map: loadedChar.map,
+            inventory: loadedChar.inventory,
+            player: loadedChar,
+        }));
     };
+
 
     const handleCharacterCreate = async (char: any) => {
         setSelectedCharacter(char);
