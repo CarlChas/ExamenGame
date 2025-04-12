@@ -33,18 +33,15 @@ const Game = () => {
             return;
         }
 
-        const loginUser = async () => {
-            const res = await fetch('http://localhost:3001/api/users/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: stored }),
-            });
-            const data = await res.json();
-            setUser(data);
+        const fetchCharacters = async () => {
+            const res = await fetch(`http://localhost:3001/api/users/load/${stored}`);
+            const characters = await res.json();
+            setUser({ username: stored, characters });
         };
 
-        loginUser();
+        fetchCharacters();
     }, [navigate]);
+
 
 
     const handleCharacterCreate = async (char: any) => {
@@ -229,7 +226,7 @@ const Game = () => {
     return (
         <section>
             <CharacterList
-                characters={user.characters}
+                characters={user.characters || []}
                 onSelect={setSelectedCharacter}
                 onCreateNew={() => setCreating(true)}
             />

@@ -2,32 +2,40 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
+    const [mode, setMode] = useState<'login' | 'register'>('login');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [mode, setMode] = useState<'login' | 'register'>('login');
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
         setError('');
         const endpoint = mode === 'login' ? 'login' : 'register';
+        console.log(`🔁 Trying to ${mode} at /api/users/${endpoint}`);
 
-        const res = await fetch(`http://localhost:3001/api/users/${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
-        });
+        try {
+            const res = await fetch(`http://localhost:3001/api/users/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
 
-        const data = await res.json();
+            const data = await res.json();
+            console.log('📦 Response:', data);
 
-        if (!res.ok) {
-            setError(data.error || 'Something went wrong');
-            return;
+            if (!res.ok) {
+                setError(data.error || 'Something went wrong');
+                return;
+            }
+
+            localStorage.setItem('currentUser', username);
+            navigate('/game');
+        } catch (err) {
+            console.error('❌ Network or server error:', err);
+            setError('Network error');
         }
-
-        localStorage.setItem('currentUser', username);
-        navigate('/game');
     };
+
 
     return (
         <div style={{ maxWidth: 400, margin: '2rem auto', padding: '1rem', background: '#222', color: '#fff' }}>
