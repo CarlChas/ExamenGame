@@ -5,8 +5,8 @@ interface Props {
 }
 
 const CharacterStats = ({ character }: Props) => {
-    const maxHp = character.endurance * 10 + character.level * 5;
-    const maxMp = character.wisdom * 10 + character.level * 5;
+    const maxHp = character.endurance * 10 + character.strength * 2 + character.level * 5;
+    const maxMp = character.wisdom * 10 + character.intelligence * 2 + character.level * 5;
     const nextLevelXp = character.level * 100;
 
     return (
@@ -31,6 +31,8 @@ const CharacterStats = ({ character }: Props) => {
             <p><strong>END:</strong> {character.endurance}</p>
             <p><strong>CHA:</strong> {character.charisma}</p>
             <p><strong>LUK:</strong> {character.luck}</p>
+            <p><strong>Divinity:</strong> {character.divinity}</p>
+
         </div>
     );
 };

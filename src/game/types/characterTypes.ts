@@ -8,6 +8,7 @@ export interface Character {
   endurance: number;
   charisma: number;
   luck: number;
+  divinity: number;
   level: number;
   xp: number;
   currentHp: number;

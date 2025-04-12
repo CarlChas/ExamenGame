@@ -13,13 +13,16 @@ const Game = () => {
     // 🔁 These must NOT be inside "if (creating)"
     const [name, setName] = useState('');
     const [color, setColor] = useState('#000000');
-    const [strength, setStrength] = useState(1);
-    const [dexterity, setDexterity] = useState(1);
-    const [intelligence, setIntelligence] = useState(1);
-    const [wisdom, setWisdom] = useState(1);
-    const [endurance, setEndurance] = useState(1);
-    const [charisma, setCharisma] = useState(1);
-    const [luck, setLuck] = useState(1);
+    const [strength, setStrength] = useState(1); // default value
+    const [dexterity, setDexterity] = useState(1); // default value
+    const [intelligence, setIntelligence] = useState(1); // default value
+    const [wisdom, setWisdom] = useState(1); // default value
+    const [endurance, setEndurance] = useState(1); // default value
+    const [charisma, setCharisma] = useState(1); // default value
+    const [luck, setLuck] = useState(1); // default value
+    const [divinity] = useState(1); // hidden from UI, used in final object
+    const [lineage, setLineage] = useState('');  // chosen lineage name
+
     const maxPoints = 30;
 
 
@@ -57,9 +60,12 @@ const Game = () => {
             endurance,
             charisma,
             luck,
+            divinity,
+            lineage,
             level: 1,
             xp: 0
         };
+
         handleCharacterCreate(newChar);
     };
 
@@ -77,9 +83,10 @@ const Game = () => {
         );
     }
 
+    //character creation
     if (creating) {
         const totalAllocated = strength + dexterity + intelligence + wisdom + endurance + charisma + luck;
-        const canCreate = totalAllocated === maxPoints;
+        const canCreate = totalAllocated === maxPoints && lineage !== '';
         return (
             <div>
                 <h2>Create Your Demigod</h2>
@@ -96,7 +103,6 @@ const Game = () => {
                         if (diff <= 0 || remaining >= diff) setStrength(newValue);
                     }} />
                 </div>
-
                 <div>
                     <label>Dexterity: {dexterity}</label>
                     <input type="range" min="1" max="10" value={dexterity} onInput={(e) => {
@@ -108,7 +114,6 @@ const Game = () => {
                         if (diff <= 0 || remaining >= diff) setDexterity(newValue);
                     }} />
                 </div>
-
                 <div>
                     <label>Intelligence: {intelligence}</label>
                     <input type="range" min="1" max="10" value={intelligence} onInput={(e) => {
@@ -120,7 +125,6 @@ const Game = () => {
                         if (diff <= 0 || remaining >= diff) setIntelligence(newValue);
                     }} />
                 </div>
-
                 <div>
                     <label>Wisdom: {wisdom}</label>
                     <input type="range" min="1" max="10" value={wisdom} onInput={(e) => {
@@ -132,7 +136,6 @@ const Game = () => {
                         if (diff <= 0 || remaining >= diff) setWisdom(newValue);
                     }} />
                 </div>
-
                 <div>
                     <label>Endurance: {endurance}</label>
                     <input type="range" min="1" max="10" value={endurance} onInput={(e) => {
@@ -144,7 +147,6 @@ const Game = () => {
                         if (diff <= 0 || remaining >= diff) setEndurance(newValue);
                     }} />
                 </div>
-
                 <div>
                     <label>Charisma: {charisma}</label>
                     <input type="range" min="1" max="10" value={charisma} onInput={(e) => {
@@ -156,7 +158,6 @@ const Game = () => {
                         if (diff <= 0 || remaining >= diff) setCharisma(newValue);
                     }} />
                 </div>
-
                 <div>
                     <label>Luck: {luck}</label>
                     <input type="range" min="1" max="10" value={luck} onInput={(e) => {
@@ -168,7 +169,26 @@ const Game = () => {
                         if (diff <= 0 || remaining >= diff) setLuck(newValue);
                     }} />
                 </div>
+
                 <p>Points remaining: {maxPoints - (strength + dexterity + intelligence + wisdom + endurance + charisma + luck)}</p>
+
+                {/* Lineage placeholder code */}
+                <div>
+                    <label>Lineage:</label>
+                    <select value={lineage} onChange={(e) => setLineage(e.target.value)}>
+                        <option value="">-- Select Lineage --</option>
+                        <option value="celestial">Celestial</option>
+                        <option value="infernal">Infernal</option>
+                        <option value="primordial">Primordial</option>
+                        <option value="dragon">Dragon</option>
+                        <option value="outer">Outer</option>
+                        <option value="legend">Legend</option>
+                        <option value="elemental">Elemental</option>
+                        <option value="fey">Fey</option>
+                        {/* Add more as needed */}
+                    </select>
+                </div>
+
                 <button
                     onClick={handleCreate}
                     disabled={!canCreate}
