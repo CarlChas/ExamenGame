@@ -48,24 +48,32 @@ router.post('/login', async (req, res) => {
 
 
 // 💾 Save characters
+// Updated /save route
 router.post('/save', async (req, res) => {
-  const { username, characters } = req.body;
-  if (!username || !characters) return res.status(400).json({ error: 'Missing data' });
+  const { username, character } = req.body;
+  if (!username || !character) return res.status(400).json({ error: 'Missing data' });
 
   const user = await prisma.user.findUnique({ where: { username } });
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  await prisma.character.deleteMany({ where: { userId: user.id } });
-
-  const newChars = await prisma.character.createMany({
-    data: characters.map((char: any) => ({
-      ...char,
+  // Delete existing character with same name (or use id for better integrity)
+  await prisma.character.deleteMany({
+    where: {
       userId: user.id,
-    })),
+      name: character.name,
+    },
   });
 
-  res.json({ success: true, created: newChars.count });
+  const newChar = await prisma.character.create({
+    data: {
+      ...character,
+      userId: user.id,
+    },
+  });
+
+  res.json({ success: true, character: newChar });
 });
+
 
 // 📥 Load characters
 router.get('/load/:username', async (req, res) => {

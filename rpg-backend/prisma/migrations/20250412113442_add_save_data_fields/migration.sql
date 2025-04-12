@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Character" ADD COLUMN     "currentHp" INTEGER NOT NULL DEFAULT 10,
+ADD COLUMN     "currentMp" INTEGER NOT NULL DEFAULT 10,
+ADD COLUMN     "inventory" JSONB,
+ADD COLUMN     "map" JSONB,
+ADD COLUMN     "pos" JSONB;

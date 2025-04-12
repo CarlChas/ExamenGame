@@ -11,11 +11,10 @@ interface Props {
   onSwitchCharacter: () => void;
 }
 
-// 🧠 Utility functions
 const calculateMaxHp = (char: Character) => char.endurance * 10 + char.level * 5;
 const calculateMaxMp = (char: Character) => char.wisdom * 10 + char.level * 5;
 
-const GameEngine = ({ character }: Props) => {
+const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [area, setArea] = useState<Area>(getArea(0, 0));
@@ -83,7 +82,6 @@ const GameEngine = ({ character }: Props) => {
         if (dist < npc.radius) {
           setDialog(npc.dialog);
 
-          // 🎁 Reward XP + Item
           const xpGain = 25 + Math.floor(player.intelligence / 2);
           const newXp = player.xp + xpGain;
           const levelUp = newXp >= nextLevelXp;
@@ -193,6 +191,7 @@ const GameEngine = ({ character }: Props) => {
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
           <button onClick={handleSave}>💾 Save</button>
           <button onClick={handleLoad}>📂 Load Game</button>
+          <button onClick={onSwitchCharacter}>🔁 Change Character</button>
         </div>
 
         {dialog && (
@@ -212,7 +211,6 @@ const GameEngine = ({ character }: Props) => {
         )}
       </div>
 
-      {/* Sidebar UI */}
       <div style={{
         minWidth: '240px',
         color: 'white',
