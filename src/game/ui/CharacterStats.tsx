@@ -24,6 +24,15 @@ const CharacterStats = ({ character }: Props) => {
             <p><strong>Max HP:</strong> {maxHp}</p>
             <p><strong>Max MP:</strong> {maxMp}</p>
             <hr style={{ borderColor: '#444' }} />
+            <p style={{
+                marginTop: '0.5rem',
+                color: '#ffd700', // gold
+                fontWeight: 'bold',
+                fontStyle: 'italic',
+                textShadow: '1px 1px 2px black'
+            }}>
+                ✨ Divinity: {character.divinity}
+            </p>
             <p><strong>STR:</strong> {character.strength}</p>
             <p><strong>DEX:</strong> {character.dexterity}</p>
             <p><strong>INT:</strong> {character.intelligence}</p>
@@ -31,8 +40,6 @@ const CharacterStats = ({ character }: Props) => {
             <p><strong>END:</strong> {character.endurance}</p>
             <p><strong>CHA:</strong> {character.charisma}</p>
             <p><strong>LUK:</strong> {character.luck}</p>
-            <p><strong>Divinity:</strong> {character.divinity}</p>
-
         </div>
     );
 };
