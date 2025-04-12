@@ -34,8 +34,6 @@ const Game = () => {
     const handleSelectCharacter = (char: any) => {
         setSelectedCharacter(char);
         localStorage.setItem('selectedCharacter', JSON.stringify(char));
-
-        localStorage.removeItem('gameSave');
     };
 
     const handleCharacterCreate = async (char: any) => {
