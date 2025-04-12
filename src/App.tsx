@@ -5,7 +5,7 @@ import Footer from './components/Footer';
 // import Home from './pages/Home';
 import About from './pages/About';
 import Game from './pages/Game';
-import Login from './auth/Login';
+import LoginPage from './pages/LoginPage';
 
 const App = () => {
   return (
@@ -13,7 +13,7 @@ const App = () => {
       <Navbar />
       <main style={{ minHeight: 'calc(100vh - 120px)', padding: '1rem' }}>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<LoginPage />} />
           <Route path="/game" element={<Game />} />
           <Route path="/about" element={<About />} />
         </Routes>

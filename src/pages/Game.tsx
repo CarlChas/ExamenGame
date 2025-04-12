@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CharacterList from '../components/CharacterList';
 import GameEngine from '../game/GameEngine';
-import { getCurrentUser, saveUser } from '../utils/storage';
+// import { getCurrentUser, saveUser } from '../utils/storage';
 
 const Game = () => {
     const [user, setUser] = useState<any>(null);
@@ -27,22 +27,47 @@ const Game = () => {
 
 
     useEffect(() => {
-        const current = getCurrentUser();
-        if (!current) {
+        const stored = localStorage.getItem('currentUser');
+        if (!stored) {
             navigate('/');
             return;
         }
-        setUser(current);
+
+        const loginUser = async () => {
+            const res = await fetch('http://localhost:3001/api/users/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: stored }),
+            });
+            const data = await res.json();
+            setUser(data);
+        };
+
+        loginUser();
     }, [navigate]);
 
-    const handleCharacterCreate = (char: any) => {
-        const updated = { ...user, characters: [...user.characters, char] };
-        saveUser(updated);
-        localStorage.setItem('currentUser', updated.username);
-        setUser(updated);
+
+    const handleCharacterCreate = async (char: any) => {
+        const updatedUser = {
+            ...user,
+            characters: [...user.characters, char],
+        };
+        setUser(updatedUser);
         setSelectedCharacter(char);
         setCreating(false);
+        localStorage.setItem('currentUser', updatedUser.username);
+
+        // Save to backend
+        await fetch('http://localhost:3001/api/users/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: updatedUser.username,
+                characters: updatedUser.characters,
+            }),
+        });
     };
+
 
     const handleLogout = () => {
         localStorage.removeItem('currentUser');
