@@ -148,7 +148,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
 
   const handleLoad = () => {
-    const saved = localStorage.getItem('gameSave');
+    const saveKey = `gameSave:${player.name}`;
+    const saved = localStorage.getItem(saveKey);
     if (saved) {
       const parsed = JSON.parse(saved);
       setMapData(parsed.map);
@@ -158,9 +159,10 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       if (parsed.player) setPlayer(parsed.player);
       setDialog('Game loaded!');
     } else {
-      alert('No saved game found!');
+      alert('No saved game found for this character!');
     }
   };
+
 
   const handleRemoveItem = (id: string) => {
     setInventory(prev => prev.filter(item => item.id !== id));
