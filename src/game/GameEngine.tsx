@@ -36,16 +36,18 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const nextLevelXp = player.level * 100;
 
   useEffect(() => {
-    const saved = localStorage.getItem('gameSave');
+    const saveKey = `gameSave:${character.name}`;
+    const saved = localStorage.getItem(saveKey);
     if (saved) {
-      const { pos, map, inventory: inv, player: savedPlayer } = JSON.parse(saved);
+      const { pos, map, inventory, player } = JSON.parse(saved);
       setMapData(map);
       setCurrentPos(pos);
       setArea(getArea(pos.x, pos.y));
-      if (inv) setInventory(inv);
-      if (savedPlayer) setPlayer(savedPlayer);
+      if (inventory) setInventory(inventory);
+      if (player) setPlayer(player);
     }
   }, []);
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -133,15 +135,17 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   };
 
   const handleSave = () => {
+    const saveKey = `gameSave:${player.name}`;
     const saveData = {
       pos: currentPos,
       map: getMapData(),
       inventory,
       player,
     };
-    localStorage.setItem('gameSave', JSON.stringify(saveData));
+    localStorage.setItem(saveKey, JSON.stringify(saveData));
     alert('Game saved!');
   };
+
 
   const handleLoad = () => {
     const saved = localStorage.getItem('gameSave');

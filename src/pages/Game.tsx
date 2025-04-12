@@ -34,7 +34,20 @@ const Game = () => {
     const handleSelectCharacter = (char: any) => {
         setSelectedCharacter(char);
         localStorage.setItem('selectedCharacter', JSON.stringify(char));
+
+        const saveKey = `gameSave:${char.name}`;
+        const exists = localStorage.getItem(saveKey);
+        if (!exists) {
+            const newSave = {
+                pos: { x: 0, y: 0 },
+                map: {},
+                inventory: [],
+                player: char,
+            };
+            localStorage.setItem(saveKey, JSON.stringify(newSave));
+        }
     };
+
 
     const handleCharacterCreate = async (char: any) => {
         const updatedUser = {
