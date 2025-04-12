@@ -54,11 +54,11 @@ const Game = () => {
             ...user,
             characters: [...user.characters, char],
         };
-        setUser(updatedUser);
-        setSelectedCharacter(char);
-        localStorage.setItem('selectedCharacter', JSON.stringify(char));
         setCreating(false);
+        localStorage.setItem('selectedCharacter', JSON.stringify(char));
+        setSelectedCharacter(char);
 
+        // Save to backend
         await fetch('http://localhost:3001/api/users/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -67,7 +67,13 @@ const Game = () => {
                 characters: updatedUser.characters,
             }),
         });
+
+        // 🔁 Fetch the latest character list again after saving
+        const res = await fetch(`http://localhost:3001/api/users/load/${updatedUser.username}`);
+        const characters = await res.json();
+        setUser({ username: updatedUser.username, characters });
     };
+
 
     const handleLogout = () => {
         localStorage.removeItem('currentUser');
