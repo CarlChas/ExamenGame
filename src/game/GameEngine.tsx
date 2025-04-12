@@ -8,6 +8,7 @@ import { Character } from './types/characterTypes';
 
 interface Props {
   character: Character;
+  onSwitchCharacter: () => void;
 }
 
 // 🧠 Utility functions
