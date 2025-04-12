@@ -16,18 +16,19 @@ const calculateMaxMp = (char: Character) => char.wisdom * 10 + char.level * 5;
 
 const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
-  const [inventory, setInventory] = useState<Item[]>([]);
+  const [inventory, setInventory] = useState<Item[]>(() => character.inventory ?? []);
+  const [currentPos, setCurrentPos] = useState(character.pos ?? { x: 0, y: 0 });
 
   const [player, setPlayer] = useState<Character>(() => {
     const level = character.level || 1;
-    const base = { ...character, level, xp: character.xp || 0 };
     return {
-      ...base,
-      currentHp: character.currentHp ?? calculateMaxHp(base),
-      currentMp: character.currentMp ?? calculateMaxMp(base),
+      ...character,
+      level,
+      xp: character.xp || 0,
+      currentHp: character.currentHp ?? calculateMaxHp(character),
+      currentMp: character.currentMp ?? calculateMaxMp(character),
     };
   });
 
@@ -36,18 +37,9 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const nextLevelXp = player.level * 100;
 
   useEffect(() => {
-    const saveKey = `gameSave:${character.name}`;
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-      const { pos, map, inventory, player } = JSON.parse(saved);
-      setMapData(map);
-      setCurrentPos(pos);
-      setArea(getArea(pos.x, pos.y));
-      if (inventory) setInventory(inventory);
-      if (player) setPlayer(player);
-    }
-  }, []);
-
+    setArea(getArea(currentPos.x, currentPos.y));
+    if (character.map) setMapData(character.map);
+  }, [character, currentPos]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -88,22 +80,22 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           const newXp = player.xp + xpGain;
           const levelUp = newXp >= nextLevelXp;
 
-          const updatedPlayer = {
+          const updated = {
             ...player,
             xp: levelUp ? newXp - nextLevelXp : newXp,
             level: levelUp ? player.level + 1 : player.level,
             currentHp: levelUp ? calculateMaxHp({ ...player, level: player.level + 1 }) : player.currentHp,
             currentMp: levelUp ? calculateMaxMp({ ...player, level: player.level + 1 }) : player.currentMp,
           };
-          setPlayer(updatedPlayer);
+          setPlayer(updated);
 
-          const newItem: Item = {
+          const item: Item = {
             id: Date.now().toString(),
             name: 'Mystic Shard',
             description: 'A fragment pulsing with energy.',
             type: 'quest',
           };
-          setInventory(prev => [...prev, newItem]);
+          setInventory(prev => [...prev, item]);
           return;
         }
       }
@@ -134,38 +126,29 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
-  const handleSave = () => {
-    const saveKey = `gameSave:${player.name}`;
+  const handleSave = async () => {
+    const username = localStorage.getItem('currentUser');
+    if (!username) return;
+
     const saveData = {
       pos: currentPos,
       map: getMapData(),
       inventory,
-      player,
+      currentHp: player.currentHp,
+      currentMp: player.currentMp,
     };
-    localStorage.setItem(saveKey, JSON.stringify(saveData));
+
+    await fetch('http://localhost:3001/api/users/save-progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        characterId: player.id,
+        progress: saveData,
+      }),
+    });
+
     alert('Game saved!');
-  };
-
-
-  const handleLoad = () => {
-    const saveKey = `gameSave:${player.name}`;
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setMapData(parsed.map);
-      setCurrentPos(parsed.pos);
-      setArea(getArea(parsed.pos.x, parsed.pos.y));
-      if (parsed.inventory) setInventory(parsed.inventory);
-      if (parsed.player) setPlayer(parsed.player);
-      setDialog('Game loaded!');
-    } else {
-      alert('No saved game found for this character!');
-    }
-  };
-
-
-  const handleRemoveItem = (id: string) => {
-    setInventory(prev => prev.filter(item => item.id !== id));
   };
 
   return (
@@ -196,8 +179,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         </div>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
           <button onClick={handleSave}>💾 Save</button>
-          <button onClick={handleLoad}>📂 Load Game</button>
-          <button onClick={onSwitchCharacter}>🔁 Change Character</button>
+          <button onClick={onSwitchCharacter}>🔁 Switch Character</button>
         </div>
 
         {dialog && (
@@ -237,7 +219,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           xp={player.xp}
           nextLevelXp={nextLevelXp}
         />
-        <Inventory items={inventory} onRemove={handleRemoveItem} />
+        <Inventory items={inventory} onRemove={(id) => setInventory(prev => prev.filter(i => i.id !== id))} />
       </div>
     </div>
   );
