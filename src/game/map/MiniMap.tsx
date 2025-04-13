@@ -39,19 +39,24 @@ const MiniMap = ({ currentX, currentY }: Props) => {
             const isCurrent = x === currentX && y === currentY;
 
             let bgColor = '#000';
-            let borderColor = '#333';
+            let borders: React.CSSProperties = {
+                borderTop: '1px solid #333',
+                borderBottom: '1px solid #333',
+                borderLeft: '1px solid #333',
+                borderRight: '1px solid #333',
+            };
             let content = '';
 
             if (area) {
-                const allSidesBlocked = area.blocked?.north && area.blocked?.south && area.blocked?.east && area.blocked?.west;
+                if (area.blocked?.north) borders.borderTop = '3px solid red';
+                if (area.blocked?.south) borders.borderBottom = '3px solid red';
+                if (area.blocked?.west) borders.borderLeft = '3px solid red';
+                if (area.blocked?.east) borders.borderRight = '3px solid red';
                 const hasEnemies = area.enemies && area.enemies.length > 0;
 
                 if (isCurrent) {
                     bgColor = '#00ff00';
                     content = '🧍';
-                } else if (allSidesBlocked) {
-                    bgColor = '#444';
-                    borderColor = '#f00';
                 } else if (hasEnemies) {
                     bgColor = '#222';
                     const enemyTheme = area.enemies?.[0]?.theme;
@@ -67,17 +72,61 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                     style={{
                         width: 20,
                         height: 20,
+                        position: 'relative',
                         backgroundColor: bgColor,
-                        border: `1px solid ${borderColor}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '0.75rem',
+                        boxSizing: 'border-box',
                     }}
                     title={area ? `${area.name} (${area.theme})` : 'Unknown'}
                 >
                     {content}
+
+                    {/* Inner walls */}
+                    {area?.blocked?.north && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: 2,
+                            backgroundColor: 'red',
+                        }} />
+                    )}
+                    {area?.blocked?.south && (
+                        <div style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: 2,
+                            backgroundColor: 'red',
+                        }} />
+                    )}
+                    {area?.blocked?.west && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            left: 0,
+                            width: 2,
+                            backgroundColor: 'red',
+                        }} />
+                    )}
+                    {area?.blocked?.east && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            right: 0,
+                            width: 2,
+                            backgroundColor: 'red',
+                        }} />
+                    )}
                 </div>
+
             );
         }
         rows.push(<div key={y} style={{ display: 'flex' }}>{row}</div>);

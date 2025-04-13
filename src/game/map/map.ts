@@ -12,7 +12,6 @@ export interface NPC {
 }
 
 export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'gate';
-export type DirectionKey = 'north' | 'south' | 'east' | 'west';
 
 export interface Area {
     name: string;
@@ -22,7 +21,12 @@ export interface Area {
     theme: string;
     type?: AreaType;
     event?: string;
-    blocked?: Partial<Record<DirectionKey, boolean>>;
+    blocked?: {
+        north?: boolean;
+        south?: boolean;
+        east?: boolean;
+        west?: boolean;
+    };
 }
 
 const mapData = new Map<string, Area>();
@@ -51,16 +55,31 @@ const npcDialogs = [
     'Another soul walks the void...',
 ];
 
-function randomNPC(): NPC {
-    const name = npcNames[Math.floor(Math.random() * npcNames.length)];
-    const dialog = npcDialogs[Math.floor(Math.random() * npcDialogs.length)];
-    return {
-        name,
-        dialog,
-        x: Math.floor(Math.random() * 500 + 50),
-        y: Math.floor(Math.random() * 300 + 50),
-        radius: 25,
-    };
+function randomNPCName() {
+    return npcNames[Math.floor(Math.random() * npcNames.length)];
+}
+
+function randomNPCDialog() {
+    return npcDialogs[Math.floor(Math.random() * npcDialogs.length)];
+}
+
+// 📦 Entity placement with collision avoidance
+function generateSafePosition(existing: { x: number; y: number }[], radius = 25, padding = 50): { x: number, y: number } {
+    let attempts = 0;
+    while (attempts < 100) {
+        const x = Math.floor(Math.random() * (600 - 2 * padding) + padding);
+        const y = Math.floor(Math.random() * (400 - 2 * padding) + padding);
+
+        const tooClose = existing.some(pos => {
+            const dx = pos.x - x;
+            const dy = pos.y - y;
+            return Math.sqrt(dx * dx + dy * dy) < radius * 2;
+        });
+
+        if (!tooClose) return { x, y };
+        attempts++;
+    }
+    return { x: padding, y: padding }; // fallback
 }
 
 const themes = ['corrupted', 'infernal', 'celestial', 'undead', 'elemental'];
@@ -82,30 +101,6 @@ function generateAreaName(theme: string): string {
     return `${prefix} ${suffix} (${theme})`;
 }
 
-function generateStructuredBlockedDirections(x: number, y: number): Partial<Record<DirectionKey, boolean>> {
-    const blocked: Partial<Record<DirectionKey, boolean>> = {
-        north: true,
-        south: true,
-        east: true,
-        west: true,
-    };
-
-    const isEvenRow = y % 2 === 0;
-    const isEvenCol = x % 2 === 0;
-
-    if (isEvenRow) {
-        blocked.east = false;
-        blocked.west = false;
-    }
-
-    if (isEvenCol) {
-        blocked.north = false;
-        blocked.south = false;
-    }
-
-    return blocked;
-}
-
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
     if (mapData.has(key)) return mapData.get(key)!;
@@ -113,11 +108,37 @@ export function getArea(x: number, y: number): Area {
     const theme = randomTheme();
     const type = randomType();
     const npcCount = Math.floor(Math.random() * 3) + 1;
-    const npcs: NPC[] = Array.from({ length: npcCount }, randomNPC);
+    const positions: { x: number, y: number }[] = [];
 
-    const enemies = type === 'wilderness' || type === 'dungeon'
-        ? [getRandomEnemyForTheme(theme, 1)]
-        : [];
+    const npcs: NPC[] = Array.from({ length: npcCount }, () => {
+        const pos = generateSafePosition(positions);
+        positions.push(pos);
+        return {
+            name: randomNPCName(),
+            dialog: randomNPCDialog(),
+            ...pos,
+            radius: 25,
+        };
+    });
+
+    const enemies = (type === 'wilderness' || type === 'dungeon') ? [
+        (() => {
+            const pos = generateSafePosition(positions, 20);
+            positions.push(pos);
+            return {
+                ...getRandomEnemyForTheme(theme, 1),
+                ...pos,
+                radius: 20,
+            };
+        })()
+    ] : [];
+
+    const blocked: Area['blocked'] = {
+        north: Math.random() < 0.2,
+        south: Math.random() < 0.2,
+        east: Math.random() < 0.2,
+        west: Math.random() < 0.2,
+    };
 
     const newArea: Area = {
         name: generateAreaName(theme),
@@ -126,9 +147,34 @@ export function getArea(x: number, y: number): Area {
         coords: key,
         theme,
         type,
-        blocked: generateStructuredBlockedDirections(x, y),
+        blocked,
     };
 
     mapData.set(key, newArea);
+
+    // Enforce symmetrical walls
+    const neighbors = {
+        north: { dx: 0, dy: -1, dir: 'south' },
+        south: { dx: 0, dy: 1, dir: 'north' },
+        east: { dx: 1, dy: 0, dir: 'west' },
+        west: { dx: -1, dy: 0, dir: 'east' },
+    };
+
+    for (const dir in neighbors) {
+        const { dx, dy, dir: opposite } = neighbors[dir as keyof typeof neighbors];
+        const nx = x + dx;
+        const ny = y + dy;
+        const neighborKey = `${nx},${ny}`;
+        const neighbor = mapData.get(neighborKey);
+        if (neighbor) {
+            if (blocked[dir as keyof typeof blocked]) {
+                neighbor.blocked = {
+                    ...neighbor.blocked,
+                    [opposite]: true,
+                };
+            }
+        }
+    }
+
     return newArea;
 }
