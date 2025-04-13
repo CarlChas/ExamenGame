@@ -101,6 +101,17 @@ function generateAreaName(theme: string): string {
     return `${prefix} ${suffix} (${theme})`;
 }
 
+function generateBlockedWithOneOpen(): Area['blocked'] {
+    const directions = ['north', 'south', 'east', 'west'] as const;
+    const openDir = directions[Math.floor(Math.random() * directions.length)];
+
+    return directions.reduce((acc, dir) => {
+        acc[dir] = dir === openDir ? false : Math.random() < 0.2;
+        return acc;
+    }, {} as Record<(typeof directions)[number], boolean>);
+}
+
+
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
     if (mapData.has(key)) return mapData.get(key)!;
@@ -136,12 +147,8 @@ export function getArea(x: number, y: number): Area {
         };
     });
 
-    const blocked: Area['blocked'] = {
-        north: Math.random() < 0.2,
-        south: Math.random() < 0.2,
-        east: Math.random() < 0.2,
-        west: Math.random() < 0.2,
-    };
+    const blocked: Area['blocked'] = generateBlockedWithOneOpen();
+
 
     const newArea: Area = {
         name: generateAreaName(theme),
@@ -170,7 +177,7 @@ export function getArea(x: number, y: number): Area {
         const neighborKey = `${nx},${ny}`;
         const neighbor = mapData.get(neighborKey);
         if (neighbor) {
-            if (blocked[dir as keyof typeof blocked]) {
+            if (blocked && blocked[dir as keyof typeof blocked]) {
                 neighbor.blocked = {
                     ...neighbor.blocked,
                     [opposite]: true,

@@ -54,9 +54,16 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                 if (area.blocked?.east) borders.borderRight = '3px solid red';
                 const hasEnemies = area.enemies && area.enemies.length > 0;
 
+                const allSidesBlocked = ['north', 'south', 'east', 'west'].every(
+                    (dir) => area.blocked?.[dir as keyof typeof area.blocked] === true
+                );
+
                 if (isCurrent) {
                     bgColor = '#00ff00';
                     content = '🧍';
+                } else if (allSidesBlocked) {
+                    bgColor = '#444';
+                    content = '🚫';
                 } else if (hasEnemies) {
                     bgColor = '#222';
                     const enemyTheme = area.enemies?.[0]?.theme;
@@ -151,6 +158,7 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                 <p>🕷️ Corrupted</p>
                 <p>✨ Celestial</p>
                 <p>😈 Infernal</p>
+                <p>🚫 Inaccessible Room</p>
                 <p style={{ color: '#f00' }}>⬛ Inaccessible (walled)</p>
             </div>
         </div>
