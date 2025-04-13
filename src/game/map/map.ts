@@ -95,12 +95,6 @@ function randomType(): AreaType {
     return types[Math.floor(Math.random() * types.length)];
 }
 
-function generateAreaName(theme: string): string {
-    const prefix = prefixWords[Math.floor(Math.random() * prefixWords.length)];
-    const suffix = suffixWords[Math.floor(Math.random() * suffixWords.length)];
-    return `${prefix} ${suffix} (${theme})`;
-}
-
 function generateBlockedWithOneOpen(): Area['blocked'] {
     const directions = ['north', 'south', 'east', 'west'] as const;
     const openDir = directions[Math.floor(Math.random() * directions.length)];
@@ -111,13 +105,69 @@ function generateBlockedWithOneOpen(): Area['blocked'] {
     }, {} as Record<(typeof directions)[number], boolean>);
 }
 
+interface BiomeSeed {
+    x: number;
+    y: number;
+    theme: string;
+    type: AreaType;
+    namePrefix: string;
+    nameSuffix: string;
+}
+
+
+const biomeSeeds: BiomeSeed[] = [];
+
+function generateBiomeSeeds(seedCount: number = 6) {
+    if (biomeSeeds.length > 0) return;
+
+    for (let i = 0; i < seedCount; i++) {
+        const x = Math.floor(Math.random() * 20 - 10);
+        const y = Math.floor(Math.random() * 20 - 10);
+        const theme = randomTheme();
+        const type = randomType();
+        const prefix = prefixWords[Math.floor(Math.random() * prefixWords.length)];
+        const suffix = suffixWords[Math.floor(Math.random() * suffixWords.length)];
+
+        biomeSeeds.push({
+            x,
+            y,
+            theme,
+            type,
+            namePrefix: prefix,
+            nameSuffix: suffix,
+        });
+    }
+}
+
+
+function getBiomeForCoords(x: number, y: number): BiomeSeed {
+    generateBiomeSeeds();
+
+    let closest = biomeSeeds[0];
+    let minDist = Infinity;
+
+    for (const seed of biomeSeeds) {
+        const dx = seed.x - x;
+        const dy = seed.y - y;
+        const dist = dx * dx + dy * dy;
+        if (dist < minDist) {
+            minDist = dist;
+            closest = seed;
+        }
+    }
+
+    return closest;
+}
+
 
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
     if (mapData.has(key)) return mapData.get(key)!;
 
-    const theme = randomTheme();
-    const type = randomType();
+    const biome = getBiomeForCoords(x, y);
+    const theme = biome.theme;
+    const type = biome.type;
+
     const positions: { x: number, y: number }[] = [];
 
     const shouldHaveEnemies = type === 'wilderness' || type === 'dungeon';
@@ -151,7 +201,7 @@ export function getArea(x: number, y: number): Area {
 
 
     const newArea: Area = {
-        name: generateAreaName(theme),
+        name: `${biome.namePrefix} ${biome.nameSuffix} (${theme})`,
         npcs,
         enemies,
         coords: key,

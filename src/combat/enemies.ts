@@ -102,12 +102,22 @@ const enemyTemplates: EnemyTemplate[] = [
 
 export function getRandomEnemyForTheme(theme: string, playerLevel: number): Enemy {
     const filtered = enemyTemplates.filter(e => e.theme === theme);
+    if (filtered.length === 0) {
+        console.warn(`No enemies for theme: ${theme}, using fallback.`);
+        return {
+            id: 'fallback',
+            name: 'Mysterious Shadow',
+            theme,
+            level: playerLevel,
+            maxHp: 20 + 5 * playerLevel,
+            attack: 5 + 2 * playerLevel,
+            defense: 2 + playerLevel,
+            xp: 10 + 3 * playerLevel,
+            moves: [{ name: 'Scratch', damageMultiplier: 1.0 }]
+        };
+    }
 
-    // Fallback if no enemy matches the theme
-    const template = filtered.length > 0
-        ? filtered[Math.floor(Math.random() * filtered.length)]
-        : enemyTemplates[Math.floor(Math.random() * enemyTemplates.length)];
-
+    const template = filtered[Math.floor(Math.random() * filtered.length)];
     return {
         id: template.id,
         name: template.name,
@@ -120,3 +130,4 @@ export function getRandomEnemyForTheme(theme: string, playerLevel: number): Enem
         moves: template.moves,
     };
 }
+
