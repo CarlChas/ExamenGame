@@ -7,11 +7,14 @@ import CharacterStats from './ui/CharacterStats';
 import { Character } from './types/characterTypes';
 import CombatScreen from './ui/CombatScreen';
 import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp } from '../utils/stats';
+import MiniMap from './map/MiniMap';
 
 interface Props {
   character: Character;
   onSwitchCharacter: () => void;
 }
+
+type DirectionKey = 'north' | 'south' | 'east' | 'west';
 
 const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -140,19 +143,29 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     return () => canvas.removeEventListener('click', handleClick);
   }, [area, player]);
 
-  const move = (dir: 'north' | 'south' | 'east' | 'west') => {
+  const move = (dir: DirectionKey) => {
     const { x, y } = currentPos;
-    const newPos = {
-      north: { x, y: y - 1 },
-      south: { x, y: y + 1 },
-      east: { x: x + 1, y },
-      west: { x: x - 1, y },
-    }[dir];
 
-    if (newPos) {
-      setCurrentPos(newPos);
-      setArea(getArea(newPos.x, newPos.y));
+    const directions = {
+      north: { x, y: y - 1, exit: 'north', entry: 'south' },
+      south: { x, y: y + 1, exit: 'south', entry: 'north' },
+      east: { x: x + 1, y, exit: 'east', entry: 'west' },
+      west: { x: x - 1, y, exit: 'west', entry: 'east' },
+    };
+
+    const current = getArea(x, y);
+    const { x: newX, y: newY, exit, entry } = directions[dir];
+    const destination = getArea(newX, newY);
+
+    const isBlockedFromCurrent = current.blocked?.[exit as DirectionKey];
+    const isBlockedFromDestination = destination.blocked?.[entry as DirectionKey];
+
+    if (!isBlockedFromCurrent && !isBlockedFromDestination) {
+      setCurrentPos({ x: newX, y: newY });
+      setArea(destination);
       setDialog(null);
+    } else {
+      setDialog("You can't go that way.");
     }
   };
 
@@ -214,6 +227,37 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
+  const renderMoveButton = (dir: 'north' | 'south' | 'east' | 'west', label: string) => {
+    const directionOffsets = {
+      north: { x: 0, y: -1, exit: 'north', entry: 'south' },
+      south: { x: 0, y: 1, exit: 'south', entry: 'north' },
+      east: { x: 1, y: 0, exit: 'east', entry: 'west' },
+      west: { x: -1, y: 0, exit: 'west', entry: 'east' },
+    } as const;
+
+    const { x, y } = currentPos;
+    const { x: dx, y: dy, exit, entry } = directionOffsets[dir];
+    const current = getArea(x, y);
+    const destination = getArea(x + dx, y + dy);
+
+    const isBlocked =
+      current.blocked?.[exit] === true || destination?.blocked?.[entry] === true;
+
+    return (
+      <button
+        onClick={() => move(dir)}
+        disabled={isBlocked}
+        style={{
+          opacity: isBlocked ? 0.3 : 1,
+          cursor: isBlocked ? 'not-allowed' : 'pointer'
+        }}
+      >
+        {label}
+      </button>
+    );
+  };
+
+
   if (inCombat && enemyInCombat) {
     return (
       <CombatScreen
@@ -238,7 +282,9 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   }
 
   return (
-    <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center' }}>
+    <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
+      <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
+
       <CharacterStats character={player} />
       <div>
         <h3 style={{ color: 'white', textAlign: 'center' }}>{area.name}</h3>
@@ -254,15 +300,16 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1rem' }}>
           <div />
-          <button onClick={() => move('north')}>⬆️ North</button>
+          {renderMoveButton('north', '⬆️ North')}
           <div />
-          <button onClick={() => move('west')}>⬅️ West</button>
+          {renderMoveButton('west', '⬅️ West')}
           <div />
-          <button onClick={() => move('east')}>➡️ East</button>
+          {renderMoveButton('east', '➡️ East')}
           <div />
-          <button onClick={() => move('south')}>⬇️ South</button>
+          {renderMoveButton('south', '⬇️ South')}
           <div />
         </div>
+
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
           <button onClick={handleSave}>💾 Save</button>
           <button onClick={handleLoad}>📂 Load Game</button>
@@ -294,7 +341,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         borderRadius: '8px'
       }}>
         <h3 style={{ marginTop: 0 }}>{player.name}</h3>
-        <div style={{ width: '100%', height: '120px', backgroundColor: '#333', borderRadius: '4px', marginBottom: '1rem' }}>
+        <div style={{
+          width: '100%',
+          height: '120px',
+          backgroundColor: '#333',
+          borderRadius: '4px',
+          marginBottom: '1rem'
+        }}>
           <p style={{ textAlign: 'center', paddingTop: '40px', color: '#bbb' }}>Portrait</p>
         </div>
         <StatPanel

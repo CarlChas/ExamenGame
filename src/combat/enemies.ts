@@ -102,7 +102,11 @@ const enemyTemplates: EnemyTemplate[] = [
 
 export function getRandomEnemyForTheme(theme: string, playerLevel: number): Enemy {
     const filtered = enemyTemplates.filter(e => e.theme === theme);
-    const template = filtered[Math.floor(Math.random() * filtered.length)];
+
+    // Fallback if no enemy matches the theme
+    const template = filtered.length > 0
+        ? filtered[Math.floor(Math.random() * filtered.length)]
+        : enemyTemplates[Math.floor(Math.random() * enemyTemplates.length)];
 
     return {
         id: template.id,

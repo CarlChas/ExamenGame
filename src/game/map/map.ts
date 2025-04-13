@@ -11,13 +11,18 @@ export interface NPC {
     dialog: string;
 }
 
+export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'gate';
+export type DirectionKey = 'north' | 'south' | 'east' | 'west';
+
 export interface Area {
     name: string;
     npcs: NPC[];
     enemies?: Enemy[];
     coords: string;
-    theme: string;       // 👈 new
+    theme: string;
+    type?: AreaType;
     event?: string;
+    blocked?: Partial<Record<DirectionKey, boolean>>;
 }
 
 const mapData = new Map<string, Area>();
@@ -58,13 +63,17 @@ function randomNPC(): NPC {
     };
 }
 
-// 🏞️ Themes and naming elements
 const themes = ['corrupted', 'infernal', 'celestial', 'undead', 'elemental'];
+const types: AreaType[] = ['wilderness', 'town', 'dungeon', 'gate'];
 const prefixWords = ['Twisted', 'Ancient', 'Mystic', 'Forgotten', 'Sacred', 'Wretched'];
 const suffixWords = ['Woods', 'Sanctum', 'Vale', 'Pass', 'Ruins', 'Hollow'];
 
 function randomTheme(): string {
     return themes[Math.floor(Math.random() * themes.length)];
+}
+
+function randomType(): AreaType {
+    return types[Math.floor(Math.random() * types.length)];
 }
 
 function generateAreaName(theme: string): string {
@@ -73,25 +82,41 @@ function generateAreaName(theme: string): string {
     return `${prefix} ${suffix} (${theme})`;
 }
 
+function generateStructuredBlockedDirections(x: number, y: number): Partial<Record<DirectionKey, boolean>> {
+    const blocked: Partial<Record<DirectionKey, boolean>> = {
+        north: true,
+        south: true,
+        east: true,
+        west: true,
+    };
+
+    const isEvenRow = y % 2 === 0;
+    const isEvenCol = x % 2 === 0;
+
+    if (isEvenRow) {
+        blocked.east = false;
+        blocked.west = false;
+    }
+
+    if (isEvenCol) {
+        blocked.north = false;
+        blocked.south = false;
+    }
+
+    return blocked;
+}
+
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
-
     if (mapData.has(key)) return mapData.get(key)!;
 
+    const theme = randomTheme();
+    const type = randomType();
     const npcCount = Math.floor(Math.random() * 3) + 1;
     const npcs: NPC[] = Array.from({ length: npcCount }, randomNPC);
 
-    const theme = randomTheme(); // reuse or create this utility
-
-    const enemies = Math.random() < 0.5
-        ? [
-            {
-                ...getRandomEnemyForTheme(theme, 1),
-                x: Math.floor(Math.random() * 500 + 50),
-                y: Math.floor(Math.random() * 300 + 50),
-                radius: 20
-            }
-        ]
+    const enemies = type === 'wilderness' || type === 'dungeon'
+        ? [getRandomEnemyForTheme(theme, 1)]
         : [];
 
     const newArea: Area = {
@@ -100,6 +125,8 @@ export function getArea(x: number, y: number): Area {
         enemies,
         coords: key,
         theme,
+        type,
+        blocked: generateStructuredBlockedDirections(x, y),
     };
 
     mapData.set(key, newArea);
