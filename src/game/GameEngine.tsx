@@ -5,14 +5,13 @@ import { Item } from './inventory/inventoryTypes';
 import StatPanel from './ui/StatPanel';
 import CharacterStats from './ui/CharacterStats';
 import { Character } from './types/characterTypes';
+import CombatScreen from './ui/CombatScreen';
+import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp } from '../utils/stats';
 
 interface Props {
   character: Character;
   onSwitchCharacter: () => void;
 }
-
-import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp } from '../utils/stats';
-
 
 const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,10 +34,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     };
   });
 
-
   const maxHp = calculateMaxHp(player);
   const maxMp = calculateMaxMp(player);
   const nextLevelXp = calculateNextLevelXp(player.level);
+
+  const [inCombat, setInCombat] = useState(false);
+  const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
 
   useEffect(() => {
     setArea(getArea(currentPos.x, currentPos.y));
@@ -65,26 +66,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
     const drawEnemies = () => {
       area.enemies?.forEach(enemy => {
-        const x = enemy.x ?? 0;
-        const y = enemy.y ?? 0;
-        const radius = enemy.radius ?? 20;
-
+        const ex = enemy.x ?? 0;
+        const ey = enemy.y ?? 0;
         ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.arc(ex, ey, 20, 0, Math.PI * 2);
         ctx.fillStyle = 'crimson';
         ctx.fill();
         ctx.fillStyle = 'white';
         ctx.font = '12px sans-serif';
-        ctx.fillText(enemy.name, x - 15, y - 25);
+        ctx.fillText(enemy.name, ex - 15, ey - 25);
       });
     };
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawNPCs();
-      drawEnemies(); // 👈 Add this
+      drawEnemies();
     };
-
 
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -97,7 +95,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < npc.radius) {
           setDialog(npc.dialog);
-
           const xpGain = 25 + Math.floor(player.intelligence / 2);
           const newXp = player.xp + xpGain;
           const levelUp = newXp >= nextLevelXp;
@@ -118,6 +115,17 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
             type: 'quest',
           };
           setInventory(prev => [...prev, item]);
+          return;
+        }
+      }
+
+      for (let enemy of area.enemies ?? []) {
+        const dx = x - (enemy.x ?? 0);
+        const dy = y - (enemy.y ?? 0);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 20) {
+          setEnemyInCombat(enemy);
+          setInCombat(true);
           return;
         }
       }
@@ -206,7 +214,28 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
-
+  if (inCombat && enemyInCombat) {
+    return (
+      <CombatScreen
+        player={player}
+        enemy={enemyInCombat}
+        onVictory={() => {
+          setInCombat(false);
+          setEnemyInCombat(null);
+          setArea(prev => ({
+            ...prev,
+            enemies: prev.enemies?.filter(e => e !== enemyInCombat)
+          }));
+          setDialog(`${enemyInCombat.name} defeated!`);
+        }}
+        onDefeat={() => {
+          setInCombat(false);
+          setEnemyInCombat(null);
+          setDialog('You were defeated... but you live to fight another day.');
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center' }}>

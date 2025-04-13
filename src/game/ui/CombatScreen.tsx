@@ -1,94 +1,128 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Character } from '../types/characterTypes';
+import { Enemy } from '../../combat/enemies';
+import StatPanel from '../ui/StatPanel';
+import EnemyPanel from '../ui/EnemyPanel';
 
-// enemy stats
-interface Enemy {
-  name: string;
-  hp: number;
-  attack: number;
-}
-
-// player & enemy
 interface Props {
-  player: Character;
-  enemy: Enemy;
-  onVictory: () => void;
-  onDefeat: () => void;
+    player: Character;
+    enemy: Enemy;
+    onVictory: () => void;
+    onDefeat: () => void;
 }
 
-// combat screen
 const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
-  const [playerHp, setPlayerHp] = useState(player.currentHp);
-  const [enemyHp, setEnemyHp] = useState(enemy.hp);
-  const [turn, setTurn] = useState<'player' | 'enemy'>('player');
-  const [log, setLog] = useState<string[]>([]);
+    const [playerHp, setPlayerHp] = useState(player.currentHp);
+    const [enemyHp, setEnemyHp] = useState(enemy.maxHp);
+    const [enemyMove, setEnemyMove] = useState<string | null>(null);
+    const [turn, setTurn] = useState<'player' | 'enemy'>('player');
+    const [log, setLog] = useState<string[]>([]);
 
-  const appendLog = (text: string) => setLog(prev => [text, ...prev]);
+    const appendLog = (text: string) => setLog(prev => [text, ...prev]);
 
-  const playerAttack = () => {
-    const damage = Math.floor(player.strength * 1.5);
-    setEnemyHp(prev => {
-      const newHp = Math.max(0, prev - damage);
-      appendLog(`${player.name} hits ${enemy.name} for ${damage} damage!`);
-      if (newHp === 0) {
-        appendLog(`${enemy.name} was defeated!`);
-        setTimeout(onVictory, 1500);
-      } else {
-        setTurn('enemy');
-      }
-      return newHp;
-    });
-  };
+    const handlePlayerAttack = () => {
+        const damage = Math.floor(player.strength * 1.5 + Math.random() * 5);
+        const newHp = Math.max(0, enemyHp - damage);
+        appendLog(`${player.name} hits ${enemy.name} for ${damage} damage!`);
+        setEnemyHp(newHp);
 
-  const enemyAttack = () => {
-    const damage = Math.floor(enemy.attack);
-    setPlayerHp(prev => {
-      const newHp = Math.max(0, prev - damage);
-      appendLog(`${enemy.name} hits ${player.name} for ${damage} damage!`);
-      if (newHp === 0) {
-        appendLog(`${player.name} was defeated!`);
-        setTimeout(onDefeat, 1500);
-      } else {
-        setTurn('player');
-      }
-      return newHp;
-    });
-  };
+        if (newHp <= 0) {
+            appendLog(`${enemy.name} was defeated!`);
+            setTimeout(onVictory, 1000);
+        } else {
+            setTurn('enemy');
+        }
+    };
 
-  if (turn === 'enemy' && enemyHp > 0 && playerHp > 0) {
-    setTimeout(enemyAttack, 1000);
-  }
+    const handleEnemyTurn = () => {
+        if (enemyHp <= 0 || playerHp <= 0) return;
 
-  return (
-    <div style={{ background: '#1a1a1a', padding: '2rem', borderRadius: '10px', color: 'white', maxWidth: 600, margin: 'auto' }}>
-      <h2>⚔️ Combat</h2>
+        const move = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];
+        setEnemyMove(move.name);
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <div>
-          <h3>{player.name}</h3>
-          <p>HP: {playerHp} / {player.currentHp}</p>
+        const damage = Math.floor(enemy.attack * move.damageMultiplier + Math.random() * 4);
+        const newHp = Math.max(0, playerHp - damage);
+        appendLog(`${enemy.name} uses ${move.name} and deals ${damage} damage!`);
+        setPlayerHp(newHp);
+
+        if (newHp <= 0) {
+            appendLog(`${player.name} was defeated!`);
+            setTimeout(onDefeat, 1000);
+        } else {
+            setTurn('player');
+        }
+    };
+
+    useEffect(() => {
+        if (turn === 'enemy') {
+            const timeout = setTimeout(handleEnemyTurn, 1000);
+            return () => clearTimeout(timeout);
+        }
+    }, [turn]);
+
+    return (
+        <div style={{
+            background: '#1a1a1a',
+            padding: '2rem',
+            borderRadius: '10px',
+            color: 'white',
+            maxWidth: '800px',
+            margin: '2rem auto',
+            boxShadow: '0 0 10px #000',
+            fontFamily: 'sans-serif'
+        }}>
+            <h2 style={{ textAlign: 'center' }}>⚔️ Combat Encounter</h2>
+
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '2rem',
+                marginBottom: '1rem'
+            }}>
+                <div style={{ flex: 1 }}>
+                    <h3>{player.name}</h3>
+                    <StatPanel
+                        currentHp={playerHp}
+                        maxHp={player.currentHp}
+                        currentMp={player.currentMp}
+                        maxMp={player.currentMp}
+                        level={player.level}
+                        xp={player.xp}
+                        nextLevelXp={player.level * 100}
+                    />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                    <EnemyPanel
+                        name={enemy.name}
+                        currentHp={enemyHp}
+                        maxHp={enemy.maxHp}
+                        lastMove={enemyMove ?? undefined}
+                    />
+                </div>
+            </div>
+
+            {turn === 'player' && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <button onClick={handlePlayerAttack}>🗡 Attack</button>
+                    <button disabled>🛡 Defend</button>
+                    <button disabled>🧪 Use Item</button>
+                    <button disabled>🏃‍♂️ Flee</button>
+                </div>
+            )}
+
+            <div style={{
+                background: '#333',
+                padding: '1rem',
+                borderRadius: '5px',
+                maxHeight: '200px',
+                overflowY: 'auto'
+            }}>
+                <h4>📜 Battle Log:</h4>
+                {log.length === 0 ? <p>No actions yet.</p> : log.map((entry, idx) => <p key={idx}>• {entry}</p>)}
+            </div>
         </div>
-        <div>
-          <h3>{enemy.name}</h3>
-          <p>HP: {enemyHp}</p>
-        </div>
-      </div>
-
-      {turn === 'player' && (
-        <div>
-          <button onClick={playerAttack}>🗡 Attack</button>
-          <button disabled>🛡 Defend</button>
-          <button disabled>🧪 Use Item</button>
-          <button disabled>🏃‍♂️ Flee</button>
-        </div>
-      )}
-
-      <div style={{ marginTop: '1rem', background: '#333', padding: '1rem', borderRadius: '5px' }}>
-        <h4>Battle Log:</h4>
-        {log.map((entry, idx) => <p key={idx}>{entry}</p>)}
-      </div>
-    </div>
-  );
+    );
 };
 
 export default CombatScreen;
