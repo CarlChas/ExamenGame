@@ -11,8 +11,8 @@ interface Props {
   onSwitchCharacter: () => void;
 }
 
-const calculateMaxHp = (char: Character) => char.endurance * 10 + char.level * 5;
-const calculateMaxMp = (char: Character) => char.wisdom * 10 + char.level * 5;
+import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp } from '../utils/stats';
+
 
 const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,18 +23,22 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   const [player, setPlayer] = useState<Character>(() => {
     const level = character.level || 1;
+    const baseCharacter = { ...character, level };
+    const maxHp = calculateMaxHp(baseCharacter);
+    const maxMp = calculateMaxMp(baseCharacter);
+
     return {
-      ...character,
-      level,
-      xp: character.xp || 0,
-      currentHp: character.currentHp ?? calculateMaxHp(character),
-      currentMp: character.currentMp ?? calculateMaxMp(character),
+      ...baseCharacter,
+      xp: character.xp ?? 0,
+      currentHp: character.currentHp ?? maxHp,
+      currentMp: character.currentMp ?? maxMp,
     };
   });
 
+
   const maxHp = calculateMaxHp(player);
   const maxMp = calculateMaxMp(player);
-  const nextLevelXp = player.level * 100;
+  const nextLevelXp = calculateNextLevelXp(player.level);
 
   useEffect(() => {
     setArea(getArea(currentPos.x, currentPos.y));
