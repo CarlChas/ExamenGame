@@ -1,7 +1,7 @@
 // src/game/map/map.ts
 
 import { Enemy } from '../../combat/enemies';
-import { getRandomEnemyForTheme } from '../../combat/enemies';
+import { getRandomEnemyForBiomeAndTheme } from '../../combat/enemies';
 
 export interface NPC {
     name: string;
@@ -108,6 +108,7 @@ function generateBlockedWithOneOpen(): Area['blocked'] {
 interface BiomeSeed {
     x: number;
     y: number;
+    name: string;
     theme: string;
     type: AreaType;
     namePrefix: string;
@@ -128,14 +129,15 @@ function generateBiomeSeeds(seedCount: number = 6) {
         const prefix = prefixWords[Math.floor(Math.random() * prefixWords.length)];
         const suffix = suffixWords[Math.floor(Math.random() * suffixWords.length)];
 
+        const name = ['tundra', 'desert', 'forest', 'swamp', 'wastes'][Math.floor(Math.random() * 5)];
+
         biomeSeeds.push({
-            x,
-            y,
-            theme,
-            type,
+            x, y, name,
+            theme, type,
             namePrefix: prefix,
             nameSuffix: suffix,
         });
+
     }
 }
 
@@ -178,7 +180,7 @@ export function getArea(x: number, y: number): Area {
             const pos = generateSafePosition(positions, 20);
             positions.push(pos);
             return {
-                ...getRandomEnemyForTheme(theme, 1),
+                ...getRandomEnemyForBiomeAndTheme(biome.name, theme, 1),
                 ...pos,
                 radius: 20,
             };
