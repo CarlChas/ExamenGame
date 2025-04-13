@@ -107,21 +107,12 @@ export function getArea(x: number, y: number): Area {
 
     const theme = randomTheme();
     const type = randomType();
-    const npcCount = Math.floor(Math.random() * 3) + 1;
     const positions: { x: number, y: number }[] = [];
 
-    const npcs: NPC[] = Array.from({ length: npcCount }, () => {
-        const pos = generateSafePosition(positions);
-        positions.push(pos);
-        return {
-            name: randomNPCName(),
-            dialog: randomNPCDialog(),
-            ...pos,
-            radius: 25,
-        };
-    });
+    const shouldHaveEnemies = type === 'wilderness' || type === 'dungeon';
+    const shouldHaveNPCs = type === 'town' || (!shouldHaveEnemies && Math.random() < 0.7); // 70% chance elsewhere
 
-    const enemies = (type === 'wilderness' || type === 'dungeon') ? [
+    const enemies = shouldHaveEnemies ? [
         (() => {
             const pos = generateSafePosition(positions, 20);
             positions.push(pos);
@@ -132,6 +123,18 @@ export function getArea(x: number, y: number): Area {
             };
         })()
     ] : [];
+
+    const npcCount = shouldHaveNPCs ? Math.floor(Math.random() * 3) + 1 : 0;
+    const npcs: NPC[] = Array.from({ length: npcCount }, () => {
+        const pos = generateSafePosition(positions);
+        positions.push(pos);
+        return {
+            name: randomNPCName(),
+            dialog: randomNPCDialog(),
+            ...pos,
+            radius: 25,
+        };
+    });
 
     const blocked: Area['blocked'] = {
         north: Math.random() < 0.2,
