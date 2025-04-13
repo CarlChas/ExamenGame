@@ -63,10 +63,28 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       });
     };
 
+    const drawEnemies = () => {
+      area.enemies?.forEach(enemy => {
+        const x = enemy.x ?? 0;
+        const y = enemy.y ?? 0;
+        const radius = enemy.radius ?? 20;
+
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'crimson';
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(enemy.name, x - 15, y - 25);
+      });
+    };
+
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawNPCs();
+      drawEnemies(); // 👈 Add this
     };
+
 
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();

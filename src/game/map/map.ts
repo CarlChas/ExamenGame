@@ -1,5 +1,8 @@
 // src/game/map/map.ts
 
+import { Enemy } from '../../combat/enemies';
+import { getRandomEnemyForTheme } from '../../combat/enemies';
+
 export interface NPC {
     name: string;
     x: number;
@@ -11,6 +14,7 @@ export interface NPC {
 export interface Area {
     name: string;
     npcs: NPC[];
+    enemies?: Enemy[];
     coords: string;
     theme: string;       // 👈 new
     event?: string;
@@ -72,19 +76,28 @@ function generateAreaName(theme: string): string {
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
 
-    if (mapData.has(key)) {
-        return mapData.get(key)!;
-    }
+    if (mapData.has(key)) return mapData.get(key)!;
 
     const npcCount = Math.floor(Math.random() * 3) + 1;
     const npcs: NPC[] = Array.from({ length: npcCount }, randomNPC);
 
-    const theme = randomTheme();
-    const name = generateAreaName(theme);
+    const theme = randomTheme(); // reuse or create this utility
+
+    const enemies = Math.random() < 0.5
+        ? [
+            {
+                ...getRandomEnemyForTheme(theme, 1),
+                x: Math.floor(Math.random() * 500 + 50),
+                y: Math.floor(Math.random() * 300 + 50),
+                radius: 20
+            }
+        ]
+        : [];
 
     const newArea: Area = {
-        name,
+        name: generateAreaName(theme),
         npcs,
+        enemies,
         coords: key,
         theme,
     };

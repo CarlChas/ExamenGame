@@ -9,6 +9,9 @@ export interface Enemy {
     attack: number;
     defense: number;
     xp: number;
+    x?: number;
+    y?: number;
+    radius?: number;
 }
 
 type EnemyTemplate = {
