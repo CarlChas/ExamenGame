@@ -12,7 +12,8 @@ export interface Area {
     name: string;
     npcs: NPC[];
     coords: string;
-    event?: string; // ⬅️ add this line
+    theme: string;       // 👈 new
+    event?: string;
 }
 
 const mapData = new Map<string, Area>();
@@ -53,6 +54,21 @@ function randomNPC(): NPC {
     };
 }
 
+// 🏞️ Themes and naming elements
+const themes = ['corrupted', 'infernal', 'celestial', 'undead', 'elemental'];
+const prefixWords = ['Twisted', 'Ancient', 'Mystic', 'Forgotten', 'Sacred', 'Wretched'];
+const suffixWords = ['Woods', 'Sanctum', 'Vale', 'Pass', 'Ruins', 'Hollow'];
+
+function randomTheme(): string {
+    return themes[Math.floor(Math.random() * themes.length)];
+}
+
+function generateAreaName(theme: string): string {
+    const prefix = prefixWords[Math.floor(Math.random() * prefixWords.length)];
+    const suffix = suffixWords[Math.floor(Math.random() * suffixWords.length)];
+    return `${prefix} ${suffix} (${theme})`;
+}
+
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
 
@@ -60,18 +76,17 @@ export function getArea(x: number, y: number): Area {
         return mapData.get(key)!;
     }
 
-    // Otherwise generate a new area
     const npcCount = Math.floor(Math.random() * 3) + 1;
-    const npcs: NPC[] = [];
+    const npcs: NPC[] = Array.from({ length: npcCount }, randomNPC);
 
-    for (let i = 0; i < npcCount; i++) {
-        npcs.push(randomNPC());
-    }
+    const theme = randomTheme();
+    const name = generateAreaName(theme);
 
     const newArea: Area = {
-        name: `Wilderness (${x}, ${y})`,
+        name,
         npcs,
         coords: key,
+        theme,
     };
 
     mapData.set(key, newArea);
