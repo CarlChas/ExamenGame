@@ -90,7 +90,7 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                     bgColor = '#444';
                 } else if (area.enemies?.length) {
                     bgColor = '#222';
-                    content = getEnemyEmoji(area.enemies[0]?.theme);
+                    content = getEnemyEmoji(area.enemies?.[0]?.theme[0]);
                 } else {
                     bgColor = '#666';
                 }

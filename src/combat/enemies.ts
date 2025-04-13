@@ -11,7 +11,7 @@ export interface EnemyMove {
 export interface Enemy {
     id: string;
     name: string;
-    theme: string;
+    theme: string[];
     level: number;
     maxHp: number;
     attack: number;
@@ -26,7 +26,7 @@ export interface Enemy {
 type EnemyTemplate = {
     id: string;
     name: string;
-    theme: string;
+    theme: string[]; // 🔄 now supports multiple biomes
     baseStats: {
         hp: number;
         attack: number;
@@ -46,7 +46,7 @@ const enemyTemplates: EnemyTemplate[] = [
     {
         id: 'undead-1',
         name: 'Rotting Skeleton',
-        theme: 'undead',
+        theme: ['undead', 'elemental'],
         baseStats: { hp: 30, attack: 6, defense: 2, xp: 15 },
         growth: { hp: 5, attack: 2, defense: 1, xp: 5 },
         moves: [
@@ -57,7 +57,7 @@ const enemyTemplates: EnemyTemplate[] = [
     {
         id: 'undead-2',
         name: 'Ghoul',
-        theme: 'undead',
+        theme: ['undead'],
         baseStats: { hp: 40, attack: 10, defense: 3, xp: 20 },
         growth: { hp: 6, attack: 3, defense: 1, xp: 6 },
         moves: [
@@ -68,7 +68,7 @@ const enemyTemplates: EnemyTemplate[] = [
     {
         id: 'elemental-1',
         name: 'Flame Sprite',
-        theme: 'elemental',
+        theme: ['elemental'],
         baseStats: { hp: 25, attack: 12, defense: 1, xp: 18 },
         growth: { hp: 4, attack: 4, defense: 0.5, xp: 6 },
         moves: [
@@ -79,7 +79,7 @@ const enemyTemplates: EnemyTemplate[] = [
     {
         id: 'corrupted-1',
         name: 'Shadow Beast',
-        theme: 'corrupted',
+        theme: ['corrupted'],
         baseStats: { hp: 45, attack: 8, defense: 4, xp: 25 },
         growth: { hp: 7, attack: 2, defense: 1.5, xp: 7 },
         moves: [
@@ -90,38 +90,27 @@ const enemyTemplates: EnemyTemplate[] = [
     {
         id: 'celestial-1',
         name: 'Fallen Starling',
-        theme: 'celestial',
+        theme: ['celestial'],
         baseStats: { hp: 35, attack: 9, defense: 2, xp: 20 },
         growth: { hp: 5, attack: 2.5, defense: 1, xp: 6 },
         moves: [
             { name: 'Starfall', damageMultiplier: 1.5, type: 'magical' },
             { name: 'Radiant Slash', damageMultiplier: 1.1, type: 'physical' },
         ],
-    }
+    },
 ];
 
 export function getRandomEnemyForTheme(theme: string, playerLevel: number): Enemy {
-    const filtered = enemyTemplates.filter(e => e.theme === theme);
-    if (filtered.length === 0) {
-        console.warn(`No enemies for theme: ${theme}, using fallback.`);
-        return {
-            id: 'fallback',
-            name: 'Mysterious Shadow',
-            theme,
-            level: playerLevel,
-            maxHp: 20 + 5 * playerLevel,
-            attack: 5 + 2 * playerLevel,
-            defense: 2 + playerLevel,
-            xp: 10 + 3 * playerLevel,
-            moves: [{ name: 'Scratch', damageMultiplier: 1.0 }]
-        };
-    }
+    const filtered = enemyTemplates.filter(e =>
+        Array.isArray(e.theme) ? e.theme.includes(theme) : e.theme === theme
+    );
 
     const template = filtered[Math.floor(Math.random() * filtered.length)];
+
     return {
         id: template.id,
         name: template.name,
-        theme: template.theme,
+        theme: Array.isArray(template.theme) ? template.theme : [template.theme],
         level: playerLevel,
         maxHp: Math.floor(template.baseStats.hp + template.growth.hp * playerLevel),
         attack: Math.floor(template.baseStats.attack + template.growth.attack * playerLevel),
@@ -130,4 +119,3 @@ export function getRandomEnemyForTheme(theme: string, playerLevel: number): Enem
         moves: template.moves,
     };
 }
-
