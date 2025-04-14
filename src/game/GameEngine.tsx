@@ -67,38 +67,30 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       });
     };
 
-    const spriteCache: Record<string, HTMLImageElement> = {};
-
-    const getEnemySprite = (enemyId: string): HTMLImageElement | null => {
-      if (!spriteCache[enemyId]) {
-        const img = new Image();
-        img.src = `/sprites/${enemyId}.png`; // assumes your images are named after enemy IDs
-        spriteCache[enemyId] = img;
-      }
-      return spriteCache[enemyId];
-    };
-
+    const enemyImages = useRef<Record<string, HTMLImageElement>>({});
     const drawEnemies = () => {
       area.enemies?.forEach(enemy => {
         const ex = enemy.x ?? 0;
         const ey = enemy.y ?? 0;
-        const sprite = getEnemySprite(enemy.id);
+        const sprite = enemy.sprite;
 
-        if (sprite && sprite.complete) {
-          ctx.drawImage(sprite, ex - 20, ey - 20, 40, 40);
-        } else {
-          // fallback: red circle
-          ctx.beginPath();
-          ctx.arc(ex, ey, 20, 0, Math.PI * 2);
-          ctx.fillStyle = 'crimson';
-          ctx.fill();
-          ctx.fillStyle = 'white';
-          ctx.font = '12px sans-serif';
-          ctx.fillText(enemy.name, ex - 15, ey - 25);
+        if (sprite) {
+          if (!enemyImages.current[sprite]) {
+            const img = new Image();
+            img.src = `/sprites/enemies/${sprite}.png`;
+            enemyImages.current[sprite] = img;
+            img.onload = () => {
+              if (canvasRef.current) {
+                canvasRef.current.getContext('2d')?.drawImage(img, ex - 16, ey - 16, 32, 32);
+              }
+            };
+          } else {
+            const img = enemyImages.current[sprite];
+            ctx.drawImage(img, ex - 16, ey - 16, 32, 32);
+          }
         }
       });
     };
-
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
