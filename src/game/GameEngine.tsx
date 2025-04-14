@@ -45,8 +45,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [inCombat, setInCombat] = useState(false);
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
 
-  // Draw NPCs
-  const drawNPCs = (ctx: CanvasRenderingContext2D, area: Area) => {
+  const drawNPCs = (ctx: CanvasRenderingContext2D) => {
     area.npcs.forEach(npc => {
       ctx.beginPath();
       ctx.arc(npc.x, npc.y, npc.radius, 0, Math.PI * 2);
@@ -58,17 +57,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     });
   };
 
-  // Draw enemies with sprites
-  const drawEnemies = (
-    ctx: CanvasRenderingContext2D,
-    area: Area,
-    enemyImages: Record<string, HTMLImageElement>
-  ) => {
+  const drawEnemies = (ctx: CanvasRenderingContext2D) => {
     area.enemies?.forEach(enemy => {
       const ex = enemy.x ?? 0;
       const ey = enemy.y ?? 0;
       const sprite = enemy.sprite;
-      const image = sprite ? enemyImages[sprite] : undefined;
+      const image = sprite ? enemyImages.current[sprite] : undefined;
 
       if (image && image.complete && image.naturalWidth !== 0) {
         ctx.drawImage(image, ex - 20, ey - 20, 40, 40);
@@ -84,7 +78,22 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     });
   };
 
-  // Load sprites as images
+  const draw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawNPCs(ctx);
+    drawEnemies(ctx);
+  };
+
+  useEffect(() => {
+    setArea(getArea(currentPos.x, currentPos.y));
+    if (character.map) setMapData(character.map);
+  }, [character, currentPos]);
+
   useEffect(() => {
     area.enemies?.forEach(enemy => {
       const sprite = enemy.sprite;
@@ -93,14 +102,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         img.src = `/images/enemies/${sprite}.png`;
         img.onload = () => {
           enemyImages.current[sprite] = img;
-          const canvas = canvasRef.current;
-          const ctx = canvas?.getContext('2d');
-          if (canvas && ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawNPCs(ctx, area);
-            drawEnemies(ctx, area, enemyImages.current);
-          }
-
+          draw(); // Redraw once the image is loaded
         };
         img.onerror = () => {
           console.error(`Failed to load sprite: ${sprite}`);
@@ -110,18 +112,10 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   }, [area]);
 
   useEffect(() => {
+    draw();
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawNPCs(ctx, area);
-      drawEnemies(ctx, area, enemyImages.current);
-    };
-
-    draw();
 
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -175,13 +169,32 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     };
 
     canvas.addEventListener('click', handleClick);
-    return () => canvas.removeEventListener('click', handleClick);
-  }, [area, player]);
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-  useEffect(() => {
-    setArea(getArea(currentPos.x, currentPos.y));
-    if (character.map) setMapData(character.map);
-  }, [character, currentPos]);
+      let hoveringEnemy = false;
+      for (let enemy of area.enemies ?? []) {
+        const dx = x - (enemy.x ?? 0);
+        const dy = y - (enemy.y ?? 0);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 20) {
+          hoveringEnemy = true;
+          break;
+        }
+      }
+
+      canvas.style.cursor = hoveringEnemy ? 'pointer' : 'default';
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      canvas.removeEventListener('click', handleClick);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [area, player]);
 
   const move = (dir: DirectionKey) => {
     const { x, y } = currentPos;
@@ -273,7 +286,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       south: { x: 0, y: 1, exit: 'south', entry: 'north' },
       east: { x: 1, y: 0, exit: 'east', entry: 'west' },
       west: { x: -1, y: 0, exit: 'west', entry: 'east' },
-    };
+    } as const;
 
     const { x, y } = currentPos;
     const { x: dx, y: dy, exit, entry } = directionOffsets[dir];
@@ -281,8 +294,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     const destination = getArea(x + dx, y + dy);
 
     const isBlocked =
-      current.blocked?.[exit as 'north' | 'south' | 'east' | 'west'] === true ||
-      destination?.blocked?.[entry as 'north' | 'south' | 'east' | 'west'] === true;
+      current.blocked?.[exit] === true || destination?.blocked?.[entry] === true;
 
     return (
       <button
@@ -324,8 +336,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
       <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
-
       <CharacterStats character={player} />
+
       <div>
         <h3 style={{ color: 'white', textAlign: 'center' }}>{area.name}</h3>
         <canvas
