@@ -18,11 +18,11 @@ type DirectionKey = 'north' | 'south' | 'east' | 'west';
 
 const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const enemyImages = useRef<Record<string, HTMLImageElement>>({});
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
   const [inventory, setInventory] = useState<Item[]>(() => character.inventory ?? []);
   const [currentPos, setCurrentPos] = useState(character.pos ?? { x: 0, y: 0 });
-  const enemyImages = useRef<Record<string, HTMLImageElement>>({});
 
   const [player, setPlayer] = useState<Character>(() => {
     const level = character.level || 1;
@@ -51,6 +51,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   }, [character, currentPos]);
 
   useEffect(() => {
+    area.enemies?.forEach(enemy => {
+      const sprite = enemy.sprite;
+      if (sprite && !enemyImages.current[sprite]) {
+        const img = new Image();
+        img.src = `/images/enemies/${sprite}`;
+        img.onload = () => {
+          enemyImages.current[sprite] = img;
+        };
+        img.onerror = () => {
+          console.error(`Failed to load sprite: ${sprite}`);
+        };
+      }
+    });
+  }, [area]);
+
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -73,24 +90,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         const ex = enemy.x ?? 0;
         const ey = enemy.y ?? 0;
         const sprite = enemy.sprite;
+        const image = sprite ? enemyImages.current[sprite] : undefined;
 
-        if (sprite) {
-          if (!enemyImages.current[sprite]) {
-            const img = new Image();
-            img.src = `/sprites/enemies/${sprite}.png`;
-            enemyImages.current[sprite] = img;
-            img.onload = () => {
-              if (canvasRef.current) {
-                canvasRef.current.getContext('2d')?.drawImage(img, ex - 16, ey - 16, 32, 32);
-              }
-            };
-          } else {
-            const img = enemyImages.current[sprite];
-            ctx.drawImage(img, ex - 16, ey - 16, 32, 32);
-          }
+        if (image && image.complete && image.naturalWidth !== 0) {
+          ctx.drawImage(image, ex - 20, ey - 20, 40, 40);
+        } else {
+          // fallback circle
+          ctx.beginPath();
+          ctx.arc(ex, ey, 20, 0, Math.PI * 2);
+          ctx.fillStyle = 'crimson';
+          ctx.fill();
+          ctx.fillStyle = 'white';
+          ctx.font = '12px sans-serif';
+          ctx.fillText(enemy.name, ex - 15, ey - 25);
         }
       });
     };
+
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
