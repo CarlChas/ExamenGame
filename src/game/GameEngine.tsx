@@ -22,6 +22,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [dialog, setDialog] = useState<string | null>(null);
   const [inventory, setInventory] = useState<Item[]>(() => character.inventory ?? []);
   const [currentPos, setCurrentPos] = useState(character.pos ?? { x: 0, y: 0 });
+  const enemyImages = useRef<Record<string, HTMLImageElement>>({});
 
   const [player, setPlayer] = useState<Character>(() => {
     const level = character.level || 1;
@@ -67,7 +68,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       });
     };
 
-    const enemyImages = useRef<Record<string, HTMLImageElement>>({});
     const drawEnemies = () => {
       area.enemies?.forEach(enemy => {
         const ex = enemy.x ?? 0;
