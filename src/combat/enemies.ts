@@ -18,6 +18,7 @@ export interface Enemy {
     xp: number;
     theme: string;
     biomes: string[];
+    sprite: string;
     moves: EnemyMove[];
     x?: number;
     y?: number;
@@ -29,6 +30,7 @@ type EnemyTemplate = {
     name: string;
     themes: string[];
     biomes: string[];
+    sprite: string;
     baseStats: {
         hp: number;
         attack: number;
@@ -47,9 +49,10 @@ type EnemyTemplate = {
 const enemyTemplates: EnemyTemplate[] = [
     {
         id: 'undead-1',
-        name: 'Rotting Skeleton',
+        name: 'Skeleton',
         themes: ['undead'],
         biomes: ['tundra', 'swamp', 'forest'],
+        sprite: 'skeleton_1',
         baseStats: { hp: 30, attack: 6, defense: 2, xp: 15 },
         growth: { hp: 5, attack: 2, defense: 1, xp: 5 },
         moves: [
@@ -62,6 +65,7 @@ const enemyTemplates: EnemyTemplate[] = [
         name: 'Flame Sprite',
         themes: ['elemental'],
         biomes: ['desert', 'volcano'],
+        sprite: 'elemental_fire',
         baseStats: { hp: 25, attack: 12, defense: 1, xp: 18 },
         growth: { hp: 4, attack: 4, defense: 0.5, xp: 6 },
         moves: [
@@ -74,6 +78,7 @@ const enemyTemplates: EnemyTemplate[] = [
         name: 'Shadow Beast',
         themes: ['corrupted'],
         biomes: ['swamp', 'wasteland'],
+        sprite: 'shadow_1',
         baseStats: { hp: 45, attack: 8, defense: 4, xp: 25 },
         growth: { hp: 7, attack: 2, defense: 1.5, xp: 7 },
         moves: [
@@ -86,6 +91,7 @@ const enemyTemplates: EnemyTemplate[] = [
         name: 'Fallen Starling',
         themes: ['celestial'],
         biomes: ['mountain', 'tundra'],
+        sprite: 'starling_1',
         baseStats: { hp: 35, attack: 9, defense: 2, xp: 20 },
         growth: { hp: 5, attack: 2.5, defense: 1, xp: 6 },
         moves: [
@@ -110,6 +116,7 @@ export function getRandomEnemyForBiomeAndTheme(biome: string, theme: string, pla
         level: playerLevel,
         theme: template.themes[0],
         biomes: template.biomes,
+        sprite: template.sprite,
         maxHp: Math.floor(template.baseStats.hp + template.growth.hp * playerLevel),
         attack: Math.floor(template.baseStats.attack + template.growth.attack * playerLevel),
         defense: Math.floor(template.baseStats.defense + template.growth.defense * playerLevel),
