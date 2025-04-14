@@ -137,7 +137,6 @@ function generateBiomeSeeds(seedCount: number = 6) {
             namePrefix: prefix,
             nameSuffix: suffix,
         });
-
     }
 }
 
@@ -157,10 +156,8 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
             closest = seed;
         }
     }
-
     return closest;
 }
-
 
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;

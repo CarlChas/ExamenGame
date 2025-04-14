@@ -101,13 +101,14 @@ export function getRandomEnemyForBiomeAndTheme(biome: string, theme: string, pla
         e.biomes.includes(biome) && e.themes.includes(theme)
     );
 
-    const template = filtered[Math.floor(Math.random() * filtered.length)];
+    const fallback = enemyTemplates.find(e => e.themes.includes(theme)) || enemyTemplates[0];
+    const template = filtered.length > 0 ? filtered[Math.floor(Math.random() * filtered.length)] : fallback;
 
     return {
         id: template.id,
         name: template.name,
         level: playerLevel,
-        theme: template.themes[0], // default to first for display
+        theme: template.themes[0],
         biomes: template.biomes,
         maxHp: Math.floor(template.baseStats.hp + template.growth.hp * playerLevel),
         attack: Math.floor(template.baseStats.attack + template.growth.attack * playerLevel),

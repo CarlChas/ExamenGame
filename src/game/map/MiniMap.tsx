@@ -1,4 +1,3 @@
-// src/game/map/MiniMap.tsx
 import { useEffect, useRef, useState } from 'react';
 import { getMapData } from './map';
 
@@ -6,6 +5,25 @@ interface Props {
     currentX: number;
     currentY: number;
 }
+
+const TILE_SIZE = 24;
+const WALL_THICKNESS = 4;
+const VIEW_WIDTH = 15;
+const VIEW_HEIGHT = 15;
+
+const biomeColors: Record<string, string> = {
+    tundra: '#aee1f9',
+    desert: '#f4e2b0',
+    forest: '#88c799',
+    swamp: '#7e9c91',
+    wastes: '#b5b5b5',
+    corrupted: '#6d597a',
+    infernal: '#d62828',
+    celestial: '#9d4edd',
+    undead: '#adb5bd',
+    elemental: '#fca311',
+    default: '#666',
+};
 
 const getEnemyEmoji = (theme?: string) => {
     switch (theme) {
@@ -20,174 +38,193 @@ const getEnemyEmoji = (theme?: string) => {
 
 const MiniMap = ({ currentX, currentY }: Props) => {
     const map = getMapData();
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const isDragging = useRef(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+
     const coords = Object.keys(map).map(key => {
         const [x, y] = key.split(',').map(Number);
         return { x, y, key };
     });
 
-    const minX = Math.min(...coords.map(c => c.x));
-    const maxX = Math.max(...coords.map(c => c.x));
-    const minY = Math.min(...coords.map(c => c.y));
-    const maxY = Math.max(...coords.map(c => c.y));
-
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [start, setStart] = useState({ x: 0, y: 0 });
-    const [scroll, setScroll] = useState({ left: 0, top: 0 });
-
     const handleMouseDown = (e: React.MouseEvent) => {
-        setIsDragging(true);
-        setStart({ x: e.clientX, y: e.clientY });
-        if (scrollRef.current) {
-            setScroll({
-                left: scrollRef.current.scrollLeft,
-                top: scrollRef.current.scrollTop,
+        isDragging.current = true;
+        dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+    };
+
+    const handleMouseUp = () => {
+        isDragging.current = false;
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (isDragging.current) {
+            setOffset({
+                x: e.clientX - dragStart.current.x,
+                y: e.clientY - dragStart.current.y,
             });
         }
     };
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging || !scrollRef.current) return;
-        const dx = e.clientX - start.x;
-        const dy = e.clientY - start.y;
-        scrollRef.current.scrollLeft = scroll.left - dx;
-        scrollRef.current.scrollTop = scroll.top - dy;
-    };
-
-    const handleMouseUp = () => setIsDragging(false);
-
-    const cellSize = 20;
-    const rows = [];
-
-    for (let y = minY; y <= maxY; y++) {
-        const row = [];
-        for (let x = minX; x <= maxX; x++) {
-            const cellKey = `${x},${y}`;
-            const area = map[cellKey];
-            const isCurrent = x === currentX && y === currentY;
-
-            let bgColor = '#000';
-            let content = '';
-            let borders: React.CSSProperties = {
-                borderTop: '1px solid #333',
-                borderBottom: '1px solid #333',
-                borderLeft: '1px solid #333',
-                borderRight: '1px solid #333',
-            };
-
-            if (area) {
-                if (area.blocked?.north) borders.borderTop = '3px solid red';
-                if (area.blocked?.south) borders.borderBottom = '3px solid red';
-                if (area.blocked?.west) borders.borderLeft = '3px solid red';
-                if (area.blocked?.east) borders.borderRight = '3px solid red';
-
-                const allSidesBlocked = area.blocked?.north && area.blocked?.south && area.blocked?.east && area.blocked?.west;
-
-                if (isCurrent) {
-                    bgColor = '#00ff00';
-                    content = '🧍';
-                } else if (allSidesBlocked) {
-                    bgColor = '#444';
-                } else if (area.enemies?.length) {
-                    bgColor = '#222';
-                    content = getEnemyEmoji(area.enemies?.[0]?.theme[0]);
-                } else {
-                    bgColor = '#666';
-                }
-            }
-
-            row.push(
-                <div
-                    key={cellKey}
-                    style={{
-                        width: cellSize,
-                        height: cellSize,
-                        position: 'relative',
-                        backgroundColor: bgColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                        boxSizing: 'border-box',
-                        ...borders,
-                    }}
-                    title={area ? `${area.name} (${area.theme})` : 'Unknown'}
-                >
-                    {content}
-                </div>
-            );
-        }
-        rows.push(<div key={y} style={{ display: 'flex' }}>{row}</div>);
-    }
-
     const centerOnPlayer = () => {
-        if (!scrollRef.current) return;
-
-        const offsetX = (currentX - minX) * cellSize;
-        const offsetY = (currentY - minY) * cellSize;
-
-        scrollRef.current.scrollLeft = offsetX - scrollRef.current.clientWidth / 2 + cellSize / 2;
-        scrollRef.current.scrollTop = offsetY - scrollRef.current.clientHeight / 2 + cellSize / 2;
+        const x = -(currentX * TILE_SIZE - (VIEW_WIDTH * TILE_SIZE) / 2);
+        const y = -(currentY * TILE_SIZE - (VIEW_HEIGHT * TILE_SIZE) / 2);
+        setOffset({ x, y });
     };
 
     useEffect(() => {
         centerOnPlayer();
-    }, []); // center initially
+    }, [currentX, currentY]);
+
+    const drawnWalls = new Set<string>();
 
     return (
-        <div style={{
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            backgroundColor: '#222',
-            padding: '5px',
-            borderRadius: '6px',
-            fontFamily: 'sans-serif',
-            color: 'white',
-        }}>
-            <p style={{ marginBottom: 4 }}>🗺 Map</p>
-
-            <div
-                ref={scrollRef}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                style={{
-                    width: 220,
-                    height: 220,
-                    overflow: 'hidden',
-                    border: '1px solid #444',
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    backgroundColor: '#111',
-                }}
-            >
-                <div style={{ width: 'max-content', height: 'max-content' }}>
-                    {rows}
-                </div>
+        <div
+            style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                width: VIEW_WIDTH * TILE_SIZE,
+                height: VIEW_HEIGHT * TILE_SIZE + 40,
+                backgroundColor: '#111',
+                padding: '5px',
+                borderRadius: '6px',
+                overflow: 'hidden',
+                fontFamily: 'sans-serif',
+                userSelect: 'none',
+            }}
+        >
+            <div style={{ marginBottom: 4, color: '#fff', display: 'flex', justifyContent: 'space-between' }}>
+                <span>🗺 Map</span>
+                <button onClick={centerOnPlayer} style={{ fontSize: '0.7rem' }}>🎯 Center</button>
             </div>
 
-            <button onClick={centerOnPlayer} style={{
-                marginTop: 5,
-                fontSize: '0.75rem',
-                backgroundColor: '#333',
-                color: 'white',
-                border: '1px solid #555',
-                padding: '2px 6px',
-                borderRadius: 4,
-                cursor: 'pointer'
-            }}>
-                🎯 Center on Player
-            </button>
+            <div
+                ref={containerRef}
+                onMouseDown={handleMouseDown}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+                style={{
+                    width: '100%',
+                    height: VIEW_HEIGHT * TILE_SIZE,
+                    overflow: 'hidden',
+                    cursor: 'grab',
+                    position: 'relative',
+                }}
+            >
+                <div style={{
+                    position: 'absolute',
+                    left: offset.x,
+                    top: offset.y,
+                }}>
+                    {/* Tiles */}
+                    {coords.map(({ x, y, key }) => {
+                        const area = map[key];
+                        const isCurrent = x === currentX && y === currentY;
 
-            <div style={{ marginTop: 6, fontSize: '0.7rem' }}>
-                <p>🧍 You</p>
-                <p>💀 Undead</p>
-                <p>🔥 Elemental</p>
-                <p>🕷️ Corrupted</p>
-                <p>✨ Celestial</p>
-                <p>😈 Infernal</p>
-                <p style={{ color: '#f00' }}>⬛ Inaccessible (walled)</p>
+                        let bgColor = '#000';
+                        let emoji = '';
+
+                        if (area) {
+                            bgColor = biomeColors[area.theme] || biomeColors.default;
+
+                            if (isCurrent) {
+                                emoji = '🧍';
+                            } else if (area.enemies?.length) {
+                                emoji = getEnemyEmoji(area.enemies[0].theme);
+                            }
+                        }
+
+                        return (
+                            <div
+                                key={key}
+                                style={{
+                                    position: 'absolute',
+                                    left: x * TILE_SIZE,
+                                    top: y * TILE_SIZE,
+                                    width: TILE_SIZE,
+                                    height: TILE_SIZE,
+                                    backgroundColor: bgColor,
+                                    fontSize: '0.75rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxSizing: 'border-box',
+                                }}
+                                title={area ? `${area.name} (${area.theme})` : 'Unknown'}
+                            >
+                                {emoji}
+                            </div>
+                        );
+                    })}
+
+                    {/* Walls */}
+                    {coords.flatMap(({ x, y }) => {
+                        const area = map[`${x},${y}`];
+                        if (!area || !area.blocked) return [];
+
+                        const wallKey = (dir: string) => `${dir}-${x},${y}`;
+                        const walls = [];
+
+                        if (area.blocked.north && !drawnWalls.has(wallKey('north'))) {
+                            drawnWalls.add(wallKey('north'));
+                            walls.push(
+                                <div key={wallKey('north')} style={{
+                                    position: 'absolute',
+                                    left: x * TILE_SIZE - 1,
+                                    top: y * TILE_SIZE - WALL_THICKNESS / 2,
+                                    width: TILE_SIZE + 2,
+                                    height: WALL_THICKNESS,
+                                    backgroundColor: 'red',
+                                }} />
+                            );
+                        }
+
+                        if (area.blocked.south && !drawnWalls.has(wallKey('south'))) {
+                            drawnWalls.add(wallKey('south'));
+                            walls.push(
+                                <div key={wallKey('south')} style={{
+                                    position: 'absolute',
+                                    left: x * TILE_SIZE - 1,
+                                    top: (y + 1) * TILE_SIZE - WALL_THICKNESS / 2,
+                                    width: TILE_SIZE + 2,
+                                    height: WALL_THICKNESS,
+                                    backgroundColor: 'red',
+                                }} />
+                            );
+                        }
+
+                        if (area.blocked.west && !drawnWalls.has(wallKey('west'))) {
+                            drawnWalls.add(wallKey('west'));
+                            walls.push(
+                                <div key={wallKey('west')} style={{
+                                    position: 'absolute',
+                                    top: y * TILE_SIZE - 1,
+                                    left: x * TILE_SIZE - WALL_THICKNESS / 2,
+                                    width: WALL_THICKNESS,
+                                    height: TILE_SIZE + 2,
+                                    backgroundColor: 'red',
+                                }} />
+                            );
+                        }
+
+                        if (area.blocked.east && !drawnWalls.has(wallKey('east'))) {
+                            drawnWalls.add(wallKey('east'));
+                            walls.push(
+                                <div key={wallKey('east')} style={{
+                                    position: 'absolute',
+                                    top: y * TILE_SIZE - 1,
+                                    left: (x + 1) * TILE_SIZE - WALL_THICKNESS / 2,
+                                    width: WALL_THICKNESS,
+                                    height: TILE_SIZE + 2,
+                                    backgroundColor: 'red',
+                                }} />
+                            );
+                        }
+
+                        return walls;
+                    })}
+                </div>
             </div>
         </div>
     );
