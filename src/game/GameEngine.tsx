@@ -45,19 +45,62 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [inCombat, setInCombat] = useState(false);
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
 
-  useEffect(() => {
-    setArea(getArea(currentPos.x, currentPos.y));
-    if (character.map) setMapData(character.map);
-  }, [character, currentPos]);
+  // Draw NPCs
+  const drawNPCs = (ctx: CanvasRenderingContext2D, area: Area) => {
+    area.npcs.forEach(npc => {
+      ctx.beginPath();
+      ctx.arc(npc.x, npc.y, npc.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'skyblue';
+      ctx.fill();
+      ctx.fillStyle = 'black';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(npc.name, npc.x - npc.radius, npc.y - npc.radius - 5);
+    });
+  };
 
+  // Draw enemies with sprites
+  const drawEnemies = (
+    ctx: CanvasRenderingContext2D,
+    area: Area,
+    enemyImages: Record<string, HTMLImageElement>
+  ) => {
+    area.enemies?.forEach(enemy => {
+      const ex = enemy.x ?? 0;
+      const ey = enemy.y ?? 0;
+      const sprite = enemy.sprite;
+      const image = sprite ? enemyImages[sprite] : undefined;
+
+      if (image && image.complete && image.naturalWidth !== 0) {
+        ctx.drawImage(image, ex - 20, ey - 20, 40, 40);
+      } else {
+        ctx.beginPath();
+        ctx.arc(ex, ey, 20, 0, Math.PI * 2);
+        ctx.fillStyle = 'crimson';
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(enemy.name, ex - 15, ey - 25);
+      }
+    });
+  };
+
+  // Load sprites as images
   useEffect(() => {
     area.enemies?.forEach(enemy => {
       const sprite = enemy.sprite;
       if (sprite && !enemyImages.current[sprite]) {
         const img = new Image();
-        img.src = `/images/enemies/${sprite}`;
+        img.src = `/images/enemies/${sprite}.png`;
         img.onload = () => {
           enemyImages.current[sprite] = img;
+          const canvas = canvasRef.current;
+          const ctx = canvas?.getContext('2d');
+          if (canvas && ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawNPCs(ctx, area);
+            drawEnemies(ctx, area, enemyImages.current);
+          }
+
         };
         img.onerror = () => {
           console.error(`Failed to load sprite: ${sprite}`);
@@ -66,53 +109,19 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     });
   }, [area]);
 
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const drawNPCs = () => {
-      area.npcs.forEach(npc => {
-        ctx.beginPath();
-        ctx.arc(npc.x, npc.y, npc.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'skyblue';
-        ctx.fill();
-        ctx.fillStyle = 'black';
-        ctx.font = '12px sans-serif';
-        ctx.fillText(npc.name, npc.x - npc.radius, npc.y - npc.radius - 5);
-      });
-    };
-
-    const drawEnemies = () => {
-      area.enemies?.forEach(enemy => {
-        const ex = enemy.x ?? 0;
-        const ey = enemy.y ?? 0;
-        const sprite = enemy.sprite;
-        const image = sprite ? enemyImages.current[sprite] : undefined;
-
-        if (image && image.complete && image.naturalWidth !== 0) {
-          ctx.drawImage(image, ex - 20, ey - 20, 40, 40);
-        } else {
-          // fallback circle
-          ctx.beginPath();
-          ctx.arc(ex, ey, 20, 0, Math.PI * 2);
-          ctx.fillStyle = 'crimson';
-          ctx.fill();
-          ctx.fillStyle = 'white';
-          ctx.font = '12px sans-serif';
-          ctx.fillText(enemy.name, ex - 15, ey - 25);
-        }
-      });
-    };
-
-
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawNPCs();
-      drawEnemies();
+      drawNPCs(ctx, area);
+      drawEnemies(ctx, area, enemyImages.current);
     };
+
+    draw();
 
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -165,10 +174,14 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       }
     };
 
-    draw();
     canvas.addEventListener('click', handleClick);
     return () => canvas.removeEventListener('click', handleClick);
   }, [area, player]);
+
+  useEffect(() => {
+    setArea(getArea(currentPos.x, currentPos.y));
+    if (character.map) setMapData(character.map);
+  }, [character, currentPos]);
 
   const move = (dir: DirectionKey) => {
     const { x, y } = currentPos;
@@ -254,13 +267,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
-  const renderMoveButton = (dir: 'north' | 'south' | 'east' | 'west', label: string) => {
+  const renderMoveButton = (dir: DirectionKey, label: string) => {
     const directionOffsets = {
       north: { x: 0, y: -1, exit: 'north', entry: 'south' },
       south: { x: 0, y: 1, exit: 'south', entry: 'north' },
       east: { x: 1, y: 0, exit: 'east', entry: 'west' },
       west: { x: -1, y: 0, exit: 'west', entry: 'east' },
-    } as const;
+    };
 
     const { x, y } = currentPos;
     const { x: dx, y: dy, exit, entry } = directionOffsets[dir];
@@ -268,7 +281,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     const destination = getArea(x + dx, y + dy);
 
     const isBlocked =
-      current.blocked?.[exit] === true || destination?.blocked?.[entry] === true;
+      current.blocked?.[exit as 'north' | 'south' | 'east' | 'west'] === true ||
+      destination?.blocked?.[entry as 'north' | 'south' | 'east' | 'west'] === true;
 
     return (
       <button
@@ -283,7 +297,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       </button>
     );
   };
-
 
   if (inCombat && enemyInCombat) {
     return (
