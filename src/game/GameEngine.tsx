@@ -9,6 +9,7 @@ import CombatScreen from './ui/CombatScreen';
 import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp } from '../utils/stats';
 import MiniMap from './map/MiniMap';
 
+
 interface Props {
   character: Character;
   onSwitchCharacter: () => void;
@@ -142,6 +143,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
             currentHp: levelUp ? calculateMaxHp({ ...player, level: player.level + 1 }) : player.currentHp,
             currentMp: levelUp ? calculateMaxMp({ ...player, level: player.level + 1 }) : player.currentMp,
           };
+          console.log('Clicked NPC:', npc);
+
           setPlayer(updated);
 
           return;

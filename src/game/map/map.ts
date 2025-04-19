@@ -2,14 +2,7 @@
 
 import { Enemy } from '../../combat/enemies';
 import { getRandomEnemyForBiomeAndTheme } from '../../combat/enemies';
-
-export interface NPC {
-    name: string;
-    x: number;
-    y: number;
-    radius: number;
-    dialog: string;
-}
+import { generateRandomNPC, NPC } from '../npcs/npcGenerator';
 
 export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'gate';
 
@@ -43,24 +36,6 @@ export function setMapData(data: Record<string, Area>) {
     Object.entries(data).forEach(([key, value]) => {
         mapData.set(key, value);
     });
-}
-
-const npcNames = ['Oracle', 'Trainer', 'Sage', 'Merchant', 'Guard', 'Wanderer'];
-const npcDialogs = [
-    'Seek wisdom in every path.',
-    'The gods favor the bold.',
-    'A challenge awaits to the north.',
-    'Care to trade stories?',
-    'No one leaves unchanged.',
-    'Another soul walks the void...',
-];
-
-function randomNPCName() {
-    return npcNames[Math.floor(Math.random() * npcNames.length)];
-}
-
-function randomNPCDialog() {
-    return npcDialogs[Math.floor(Math.random() * npcDialogs.length)];
 }
 
 // 📦 Entity placement with collision avoidance
@@ -115,7 +90,6 @@ interface BiomeSeed {
     nameSuffix: string;
 }
 
-
 const biomeSeeds: BiomeSeed[] = [];
 
 function generateBiomeSeeds(seedCount: number = 6) {
@@ -139,7 +113,6 @@ function generateBiomeSeeds(seedCount: number = 6) {
         });
     }
 }
-
 
 function getBiomeForCoords(x: number, y: number): BiomeSeed {
     generateBiomeSeeds();
@@ -188,16 +161,12 @@ export function getArea(x: number, y: number): Area {
     const npcs: NPC[] = Array.from({ length: npcCount }, () => {
         const pos = generateSafePosition(positions);
         positions.push(pos);
-        return {
-            name: randomNPCName(),
-            dialog: randomNPCDialog(),
-            ...pos,
-            radius: 25,
-        };
+        return generateRandomNPC(pos.x, pos.y);
     });
+    console.log('Generated NPCs:', npcs);
+
 
     const blocked: Area['blocked'] = generateBlockedWithOneOpen();
-
 
     const newArea: Area = {
         name: `${biome.namePrefix} ${biome.nameSuffix} (${theme})`,
