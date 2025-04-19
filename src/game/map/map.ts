@@ -2,16 +2,18 @@
 
 import { Enemy } from '../../combat/enemies';
 import { getRandomEnemyForBiomeAndTheme } from '../../combat/enemies';
-import { generateRandomNPC, NPC } from '../npcs/npcGenerator';
+import { generateSpecificNPCForLandmark, NPC } from '../npcs/npcGenerator';
 
-export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'gate' | 'city' | 'village' | 'camp';
+export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'city' | 'village' | 'camp';
 
-export type Landmark = {
-    type: 'blacksmith' | 'tavern' | 'inn' | 'market' | 'temple' | 'guild' | 'fountain';
+export type LandmarkType = 'blacksmith' | 'tavern' | 'inn' | 'market' | 'temple' | 'guild' | 'fountain';
+
+export interface Landmark {
+    type: LandmarkType;
     name: string;
     x: number;
     y: number;
-};
+}
 
 export interface Area {
     name: string;
@@ -28,6 +30,7 @@ export interface Area {
         west?: boolean;
     };
     landmarks?: Landmark[];
+    role?: LandmarkType | 'gate' | 'core';
 }
 
 const mapData = new Map<string, Area>();
@@ -46,19 +49,10 @@ export function setMapData(data: Record<string, Area>) {
     });
 }
 
+const themes = ['corrupted', 'infernal', 'celestial', 'undead', 'elemental'];
 const prefixWords = ['Twisted', 'Ancient', 'Mystic', 'Forgotten', 'Sacred', 'Wretched'];
 const suffixWords = ['Woods', 'Sanctum', 'Vale', 'Pass', 'Ruins', 'Hollow'];
 const biomeNames = ['tundra', 'desert', 'forest', 'swamp', 'wastes'];
-
-function randomTheme(): string {
-    const themes = ['corrupted', 'infernal', 'celestial', 'undead', 'elemental'];
-    return themes[Math.floor(Math.random() * themes.length)];
-}
-
-function randomType(): AreaType {
-    const types: AreaType[] = ['wilderness', 'town', 'dungeon', 'gate', 'city', 'village', 'camp'];
-    return types[Math.floor(Math.random() * types.length)];
-}
 
 const areaTypeLabels: Record<AreaType, string> = {
     city: 'City',
@@ -67,67 +61,10 @@ const areaTypeLabels: Record<AreaType, string> = {
     camp: 'Camp',
     wilderness: 'Wilderness',
     dungeon: 'Dungeon',
-    gate: 'Gate',
 };
 
-type BlockedWithGate = {
-    blocked: Area['blocked'];
-    gateDirection: 'north' | 'south' | 'east' | 'west';
-};
-
-function generateSettlementWallsWithGate(type: AreaType): BlockedWithGate | undefined {
-    const enclosedTypes: AreaType[] = ['village', 'town', 'city', 'camp'];
-    if (!enclosedTypes.includes(type)) return;
-
-    const directions = ['north', 'south', 'east', 'west'] as const;
-    const gateDirection = directions[Math.floor(Math.random() * directions.length)];
-
-    const blocked = directions.reduce((acc, dir) => {
-        acc[dir] = dir === gateDirection ? false : true;
-        return acc;
-    }, {} as Record<typeof directions[number], boolean>);
-
-    return { blocked, gateDirection };
-}
-
-function generateSafePosition(existing: { x: number; y: number }[], radius = 25, padding = 50): { x: number; y: number } {
-    let attempts = 0;
-    while (attempts < 100) {
-        const x = Math.floor(Math.random() * (600 - 2 * padding) + padding);
-        const y = Math.floor(Math.random() * (400 - 2 * padding) + padding);
-        const tooClose = existing.some(pos => {
-            const dx = pos.x - x;
-            const dy = pos.y - y;
-            return Math.sqrt(dx * dx + dy * dy) < radius * 2;
-        });
-        if (!tooClose) return { x, y };
-        attempts++;
-    }
-    return { x: padding, y: padding };
-}
-
-function generateLandmarks(type: AreaType, existing: { x: number; y: number }[]): Landmark[] {
-    const options: Record<AreaType, Landmark['type'][]> = {
-        city: ['blacksmith', 'tavern', 'inn', 'market', 'temple', 'guild', 'fountain'],
-        town: ['blacksmith', 'inn', 'market', 'temple'],
-        village: ['tavern', 'fountain'],
-        camp: ['tavern'],
-        wilderness: [],
-        dungeon: [],
-        gate: [],
-    };
-
-    const types = options[type] || [];
-    return types.map(type => {
-        const pos = generateSafePosition(existing, 25);
-        existing.push(pos);
-        return {
-            type,
-            name: type.charAt(0).toUpperCase() + type.slice(1),
-            ...pos,
-        };
-    });
-}
+const biomeSeeds: BiomeSeed[] = [];
+const reservedZones = new Set<string>();
 
 interface BiomeSeed {
     x: number;
@@ -135,12 +72,19 @@ interface BiomeSeed {
     name: string;
     theme: string;
     type: AreaType;
+    gateCoords?: { x: number; y: number };
     namePrefix: string;
     nameSuffix: string;
 }
 
-const biomeSeeds: BiomeSeed[] = [];
-const reservedZones = new Set<string>();
+function randomTheme(): string {
+    return themes[Math.floor(Math.random() * themes.length)];
+}
+
+function randomType(): AreaType {
+    const types: AreaType[] = ['wilderness', 'town', 'dungeon', 'city', 'village', 'camp'];
+    return types[Math.floor(Math.random() * types.length)];
+}
 
 function reserveSurroundings(x: number, y: number, buffer = 2) {
     for (let dx = -buffer; dx <= buffer; dx++) {
@@ -163,18 +107,24 @@ function generateBiomeSeeds(seedCount = 6) {
             continue;
         }
 
-        const theme = randomTheme();
         const type = randomType();
+        const theme = randomTheme();
         const prefix = prefixWords[Math.floor(Math.random() * prefixWords.length)];
         const suffix = suffixWords[Math.floor(Math.random() * suffixWords.length)];
         const name = biomeNames[Math.floor(Math.random() * biomeNames.length)];
 
-        biomeSeeds.push({ x, y, name, theme, type, namePrefix: prefix, nameSuffix: suffix });
+        const gateOffset = [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }][Math.floor(Math.random() * 4)];
+        const gateCoords = ['village', 'town', 'city', 'camp'].includes(type)
+            ? { x: x + gateOffset.x, y: y + gateOffset.y }
+            : undefined;
+
+        biomeSeeds.push({ x, y, name, theme, type, namePrefix: prefix, nameSuffix: suffix, gateCoords });
 
         if (['village', 'town', 'camp', 'city'].includes(type)) {
             reserveSurroundings(x, y);
         }
 
+        if (gateCoords) reservedZones.add(`${gateCoords.x},${gateCoords.y}`);
         attempts++;
     }
 }
@@ -197,6 +147,32 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
     return closest;
 }
 
+function generateSafePosition(existing: { x: number; y: number }[], radius = 25, padding = 50): { x: number; y: number } {
+    let attempts = 0;
+    while (attempts < 100) {
+        const x = Math.floor(Math.random() * (600 - 2 * padding) + padding);
+        const y = Math.floor(Math.random() * (400 - 2 * padding) + padding);
+        const tooClose = existing.some(pos => {
+            const dx = pos.x - x;
+            const dy = pos.y - y;
+            return Math.sqrt(dx * dx + dy * dy) < radius * 2;
+        });
+        if (!tooClose) return { x, y };
+        attempts++;
+    }
+    return { x: padding, y: padding };
+}
+
+function getLandmarkTypesFor(type: AreaType): LandmarkType[] {
+    switch (type) {
+        case 'city': return ['blacksmith', 'tavern', 'inn', 'market', 'temple', 'guild', 'fountain'];
+        case 'town': return ['blacksmith', 'inn', 'market', 'temple'];
+        case 'village': return ['tavern', 'fountain'];
+        case 'camp': return ['tavern'];
+        default: return [];
+    }
+}
+
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
     if (mapData.has(key)) return mapData.get(key)!;
@@ -208,12 +184,9 @@ export function getArea(x: number, y: number): Area {
     const positions: { x: number; y: number }[] = [];
 
     const shouldHaveEnemies = type === 'wilderness' || type === 'dungeon';
-    const shouldHaveNPCs = type !== 'wilderness' && type !== 'dungeon';
-
     const enemies = shouldHaveEnemies
         ? [(() => {
-            const pos = generateSafePosition(positions, 20);
-            positions.push(pos);
+            const pos = generateSafePosition(positions);
             return {
                 ...getRandomEnemyForBiomeAndTheme(biome.name, theme, 1),
                 ...pos,
@@ -222,31 +195,30 @@ export function getArea(x: number, y: number): Area {
         })()]
         : [];
 
-    let npcCount = 0;
-    if (shouldHaveNPCs) {
-        switch (type) {
-            case 'city': npcCount = Math.floor(Math.random() * 4) + 5; break;
-            case 'town': npcCount = Math.floor(Math.random() * 3) + 3; break;
-            case 'village': npcCount = Math.floor(Math.random() * 2) + 2; break;
-            case 'camp': npcCount = Math.floor(Math.random() * 2) + 1; break;
-            default: npcCount = Math.random() < 0.5 ? 1 : 0;
-        }
-    }
+    let npcs: NPC[] = [];
+    let landmarks: Landmark[] = [];
 
-    const npcs: NPC[] = Array.from({ length: npcCount }, () => {
+    const landmarkTypes = getLandmarkTypesFor(type);
+    landmarks = landmarkTypes.map(landmarkType => {
         const pos = generateSafePosition(positions);
-        positions.push(pos);
-        return generateRandomNPC(pos.x, pos.y);
+        const npc = generateSpecificNPCForLandmark(landmarkType, pos.x, pos.y);
+        npcs.push(npc);
+
+        return {
+            type: landmarkType,
+            name: landmarkType.charAt(0).toUpperCase() + landmarkType.slice(1),
+            ...pos,
+        };
     });
 
-    const landmarks = generateLandmarks(type, positions);
-    const walls = generateSettlementWallsWithGate(type);
-    const blocked = walls?.blocked;
+    const isGateTile = biome.gateCoords?.x === x && biome.gateCoords?.y === y;
+    const isCoreTile = biome.x === x && biome.y === y;
 
-    const name =
-        type === 'wilderness' || type === 'dungeon'
-            ? `${biome.namePrefix} ${biome.nameSuffix} (${theme})`
-            : `${areaTypeLabels[type]} of ${biome.namePrefix} ${biome.nameSuffix}`;
+    const name = isCoreTile
+        ? `${areaTypeLabels[type]} of ${biome.namePrefix} ${biome.nameSuffix}`
+        : `${biome.namePrefix} ${biome.nameSuffix} (${theme})`;
+
+    const role: Area['role'] = isGateTile ? 'gate' : isCoreTile ? 'core' : undefined;
 
     const area: Area = {
         name,
@@ -255,29 +227,10 @@ export function getArea(x: number, y: number): Area {
         coords: key,
         theme,
         type,
-        blocked,
+        role,
         landmarks,
     };
 
     mapData.set(key, area);
-
-    const neighbors = {
-        north: { dx: 0, dy: -1, dir: 'south' },
-        south: { dx: 0, dy: 1, dir: 'north' },
-        east: { dx: 1, dy: 0, dir: 'west' },
-        west: { dx: -1, dy: 0, dir: 'east' },
-    };
-
-    for (const dir in neighbors) {
-        const { dx, dy, dir: opposite } = neighbors[dir as keyof typeof neighbors];
-        const nx = x + dx;
-        const ny = y + dy;
-        const neighborKey = `${nx},${ny}`;
-        const neighbor = mapData.get(neighborKey);
-        if (neighbor && blocked?.[dir as keyof typeof blocked]) {
-            neighbor.blocked = { ...neighbor.blocked, [opposite]: true };
-        }
-    }
-
     return area;
 }

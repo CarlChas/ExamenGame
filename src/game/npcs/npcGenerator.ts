@@ -62,3 +62,17 @@ export function generateRandomNPC(x: number, y: number): NPC {
 
     return { name, dialog, type, x, y, radius: 25 };
 }
+
+export function generateSpecificNPCForLandmark(landmark: string, x: number, y: number): NPC {
+    const name = `${landmark.charAt(0).toUpperCase() + landmark.slice(1)} NPC`;
+    const dialog = `Welcome to the ${landmark}!`;
+
+    return {
+        name,
+        dialog,
+        type: landmark,
+        x,
+        y,
+        radius: 25,
+    };
+}
