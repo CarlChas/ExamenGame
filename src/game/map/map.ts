@@ -4,7 +4,7 @@ import { Enemy } from '../../combat/enemies';
 import { getRandomEnemyForBiomeAndTheme } from '../../combat/enemies';
 import { generateRandomNPC, NPC } from '../npcs/npcGenerator';
 
-export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'gate';
+export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'city' | 'village' | 'camp' | 'gate';
 
 export interface Area {
     name: string;
@@ -38,8 +38,7 @@ export function setMapData(data: Record<string, Area>) {
     });
 }
 
-// 📦 Entity placement with collision avoidance
-function generateSafePosition(existing: { x: number; y: number }[], radius = 25, padding = 50): { x: number, y: number } {
+function generateSafePosition(existing: { x: number; y: number }[], radius = 25, padding = 50): { x: number; y: number } {
     let attempts = 0;
     while (attempts < 100) {
         const x = Math.floor(Math.random() * (600 - 2 * padding) + padding);
@@ -58,16 +57,26 @@ function generateSafePosition(existing: { x: number; y: number }[], radius = 25,
 }
 
 const themes = ['corrupted', 'infernal', 'celestial', 'undead', 'elemental'];
-const types: AreaType[] = ['wilderness', 'town', 'dungeon', 'gate'];
 const prefixWords = ['Twisted', 'Ancient', 'Mystic', 'Forgotten', 'Sacred', 'Wretched'];
 const suffixWords = ['Woods', 'Sanctum', 'Vale', 'Pass', 'Ruins', 'Hollow'];
 
-function randomTheme(): string {
-    return themes[Math.floor(Math.random() * themes.length)];
-}
+const weightedTypes: [AreaType, number][] = [
+    ['wilderness', 40],
+    ['village', 20],
+    ['town', 15],
+    ['camp', 10],
+    ['dungeon', 8],
+    ['city', 5],
+    ['gate', 2],
+];
 
-function randomType(): AreaType {
-    return types[Math.floor(Math.random() * types.length)];
+function getWeightedRandomType(): AreaType {
+    const total = weightedTypes.reduce((sum, [, weight]) => sum + weight, 0);
+    let r = Math.random() * total;
+    for (const [type, weight] of weightedTypes) {
+        if ((r -= weight) < 0) return type;
+    }
+    return 'wilderness';
 }
 
 function generateBlockedWithOneOpen(): Area['blocked'] {
@@ -92,25 +101,19 @@ interface BiomeSeed {
 
 const biomeSeeds: BiomeSeed[] = [];
 
-function generateBiomeSeeds(seedCount: number = 6) {
+function generateBiomeSeeds(seedCount = 6) {
     if (biomeSeeds.length > 0) return;
 
     for (let i = 0; i < seedCount; i++) {
         const x = Math.floor(Math.random() * 20 - 10);
         const y = Math.floor(Math.random() * 20 - 10);
-        const theme = randomTheme();
-        const type = randomType();
+        const theme = themes[Math.floor(Math.random() * themes.length)];
+        const type = getWeightedRandomType();
         const prefix = prefixWords[Math.floor(Math.random() * prefixWords.length)];
         const suffix = suffixWords[Math.floor(Math.random() * suffixWords.length)];
-
         const name = ['tundra', 'desert', 'forest', 'swamp', 'wastes'][Math.floor(Math.random() * 5)];
 
-        biomeSeeds.push({
-            x, y, name,
-            theme, type,
-            namePrefix: prefix,
-            nameSuffix: suffix,
-        });
+        biomeSeeds.push({ x, y, name, theme, type, namePrefix: prefix, nameSuffix: suffix });
     }
 }
 
@@ -129,7 +132,18 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
             closest = seed;
         }
     }
+
     return closest;
+}
+
+function getNPCCountForType(type: AreaType): number {
+    switch (type) {
+        case 'city': return Math.floor(Math.random() * 4) + 5;
+        case 'town': return Math.floor(Math.random() * 3) + 3;
+        case 'village': return Math.floor(Math.random() * 2) + 2;
+        case 'camp': return Math.random() < 0.5 ? 1 : 2;
+        default: return Math.random() < 0.5 ? 1 : 0;
+    }
 }
 
 export function getArea(x: number, y: number): Area {
@@ -139,14 +153,13 @@ export function getArea(x: number, y: number): Area {
     const biome = getBiomeForCoords(x, y);
     const theme = biome.theme;
     const type = biome.type;
+    const positions: { x: number; y: number }[] = [];
 
-    const positions: { x: number, y: number }[] = [];
+    const shouldHaveEnemies = ['wilderness', 'dungeon'].includes(type);
+    const npcCount = getNPCCountForType(type);
 
-    const shouldHaveEnemies = type === 'wilderness' || type === 'dungeon';
-    const shouldHaveNPCs = type === 'town' || (!shouldHaveEnemies && Math.random() < 0.7); // 70% chance elsewhere
-
-    const enemies = shouldHaveEnemies ? [
-        (() => {
+    const enemies = shouldHaveEnemies
+        ? [(() => {
             const pos = generateSafePosition(positions, 20);
             positions.push(pos);
             return {
@@ -154,17 +167,14 @@ export function getArea(x: number, y: number): Area {
                 ...pos,
                 radius: 20,
             };
-        })()
-    ] : [];
+        })()]
+        : [];
 
-    const npcCount = shouldHaveNPCs ? Math.floor(Math.random() * 3) + 1 : 0;
     const npcs: NPC[] = Array.from({ length: npcCount }, () => {
         const pos = generateSafePosition(positions);
         positions.push(pos);
         return generateRandomNPC(pos.x, pos.y);
     });
-    console.log('Generated NPCs:', npcs);
-
 
     const blocked: Area['blocked'] = generateBlockedWithOneOpen();
 
@@ -180,7 +190,6 @@ export function getArea(x: number, y: number): Area {
 
     mapData.set(key, newArea);
 
-    // Enforce symmetrical walls
     const neighbors = {
         north: { dx: 0, dy: -1, dir: 'south' },
         south: { dx: 0, dy: 1, dir: 'north' },
@@ -194,13 +203,11 @@ export function getArea(x: number, y: number): Area {
         const ny = y + dy;
         const neighborKey = `${nx},${ny}`;
         const neighbor = mapData.get(neighborKey);
-        if (neighbor) {
-            if (blocked && blocked[dir as keyof typeof blocked]) {
-                neighbor.blocked = {
-                    ...neighbor.blocked,
-                    [opposite]: true,
-                };
-            }
+        if (neighbor && blocked?.[dir as keyof Area['blocked']]) {
+            neighbor.blocked = {
+                ...neighbor.blocked,
+                [opposite]: true,
+            };
         }
     }
 
