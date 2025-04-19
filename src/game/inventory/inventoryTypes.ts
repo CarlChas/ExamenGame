@@ -1,4 +1,4 @@
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+/* export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
 export interface Item {
     id: string;
@@ -8,3 +8,4 @@ export interface Item {
     rarity: Rarity;
     power?: number;
 }
+ */

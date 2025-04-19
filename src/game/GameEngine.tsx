@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getArea, Area, getMapData, setMapData } from './map/map';
 import Inventory from './inventory/Inventory';
-import { Item } from './inventory/inventoryTypes';
+import { generateRandomLoot, LootItem, Rarity } from '../game/loot';
 import StatPanel from './ui/StatPanel';
 import CharacterStats from './ui/CharacterStats';
 import { Character } from './types/characterTypes';
@@ -21,7 +21,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const enemyImages = useRef<Record<string, HTMLImageElement>>({});
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
-  const [inventory, setInventory] = useState<Item[]>(() => character.inventory ?? []);
+  const [inventory, setInventory] = useState<LootItem[]>(() => character.inventory ?? []);
   const [currentPos, setCurrentPos] = useState(character.pos ?? { x: 0, y: 0 });
 
   const [player, setPlayer] = useState<Character>(() => {
