@@ -36,6 +36,20 @@ const getEnemyEmoji = (theme?: string) => {
     }
 };
 
+const getAreaEmoji = (type?: string): string => {
+    switch (type) {
+        case 'village': return '🏘️';
+        case 'city': return '🏙️';
+        case 'camp': return '🏕️';
+        case 'town': return '🏰';
+        case 'dungeon': return '🕸️';
+        case 'wilderness': return '🌲';
+        case 'gate': return '🚪';
+        default: return '❓';
+    }
+};
+
+
 const MiniMap = ({ currentX, currentY }: Props) => {
     const map = getMapData();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -78,6 +92,22 @@ const MiniMap = ({ currentX, currentY }: Props) => {
 
     const drawnWalls = new Set<string>();
 
+    const typeColors: Record<string, string> = {
+        city: '#3a4f8f',
+        town: '#4d6b3a',
+        village: '#8f5c3a',
+        camp: '#444444',
+        dungeon: '#2a2a2a',
+        wilderness: '#34663a',
+        corrupted: '#663366',
+        infernal: '#8f1e1e',
+        celestial: '#6b6bcf',
+        undead: '#555577',
+        elemental: '#cf9f3f',
+        default: '#666',
+    };
+
+
     return (
         <div style={{
             width: VIEW_WIDTH * TILE_SIZE,
@@ -118,7 +148,8 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                         const area = map[key];
                         const isCurrent = x === currentX && y === currentY;
 
-                        let bgColor = '#000';
+                        let bgColor = typeColors[area.type ?? area.theme] || typeColors.default;
+
                         let emoji = '';
 
                         if (area) {
@@ -128,6 +159,9 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                                 emoji = '🧍';
                             } else if (area.enemies?.length) {
                                 emoji = getEnemyEmoji(area.enemies[0].theme);
+                            }
+                            else {
+                                emoji = getAreaEmoji(area.type);
                             }
                         }
 

@@ -87,11 +87,34 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const bgColor = areaBackgrounds[area.type ?? area.theme] || '#222';
+
+    <h3 style={{ color: 'white', textAlign: 'center' }}>
+      {area.name} - {area.type?.toUpperCase()}
+    </h3>
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawNPCs(ctx);
     drawEnemies(ctx);
   };
+
+  const areaBackgrounds: Record<string, string> = {
+    city: '#1e2f4d',
+    town: '#2d3c25',
+    village: '#3e2d1c',
+    camp: '#2c2c2c',
+    dungeon: '#1a1a1a',
+    wilderness: '#24442e',
+    corrupted: '#332233',
+    infernal: '#441414',
+    celestial: '#333366',
+    undead: '#2c2c3c',
+    elemental: '#443311',
+  };
+
 
   useEffect(() => {
     setArea(getArea(currentPos.x, currentPos.y));

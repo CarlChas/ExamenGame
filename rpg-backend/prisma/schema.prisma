@@ -29,8 +29,8 @@ model Character {
   lineage    String
   level      Int
   xp         Int
-  currentHp  Int    @default(10)
-  currentMp  Int    @default(10)
+  currentHp  Int    
+  currentMp  Int    
 
   // NEW FIELDS FOR SAVED PROGRESS
   pos        Json?
