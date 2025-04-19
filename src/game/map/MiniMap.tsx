@@ -79,21 +79,17 @@ const MiniMap = ({ currentX, currentY }: Props) => {
     const drawnWalls = new Set<string>();
 
     return (
-        <div
-            style={{
-                position: 'absolute',
-                top: 10,
-                right: 10,
-                width: VIEW_WIDTH * TILE_SIZE,
-                height: VIEW_HEIGHT * TILE_SIZE + 40,
-                backgroundColor: '#111',
-                padding: '5px',
-                borderRadius: '6px',
-                overflow: 'hidden',
-                fontFamily: 'sans-serif',
-                userSelect: 'none',
-            }}
-        >
+        <div style={{
+            width: VIEW_WIDTH * TILE_SIZE,
+            height: VIEW_HEIGHT * TILE_SIZE + 40,
+            backgroundColor: '#111',
+            padding: '5px',
+            borderRadius: '6px',
+            overflow: 'hidden',
+            fontFamily: 'sans-serif',
+            userSelect: 'none',
+        }}>
+
             <div style={{ marginBottom: 4, color: '#fff', display: 'flex', justifyContent: 'space-between' }}>
                 <span>🗺 Map</span>
                 <button onClick={centerOnPlayer} style={{ fontSize: '0.7rem' }}>🎯 Center</button>

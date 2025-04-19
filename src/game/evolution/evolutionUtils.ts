@@ -1,4 +1,4 @@
-import { EvolutionNode, evolutionTrees } from './evolutionData';
+/* import { EvolutionNode, evolutionTrees } from './evolutionData';
 import { Character } from '../types/Character'; // Adjust if necessary
 
 export function getAvailableEvolutions(character: Character, currentId: string): EvolutionNode[] {
@@ -17,3 +17,5 @@ export function getAvailableEvolutions(character: Character, currentId: string):
     return meetsLevel && meetsStats;
   });
 }
+
+ */

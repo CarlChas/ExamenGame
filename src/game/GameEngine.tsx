@@ -42,6 +42,9 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const maxMp = calculateMaxMp(player);
   const nextLevelXp = calculateNextLevelXp(player.level);
 
+  const [showMiniMap, setShowMiniMap] = useState(true);
+
+
   const [inCombat, setInCombat] = useState(false);
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
 
@@ -335,7 +338,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-      <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
+      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
       <CharacterStats character={player} />
 
       <div>
@@ -366,7 +369,11 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           <button onClick={handleSave}>💾 Save</button>
           <button onClick={handleLoad}>📂 Load Game</button>
           <button onClick={onSwitchCharacter}>🔁 Switch Character</button>
+          <button onClick={() => setShowMiniMap(prev => !prev)}>
+            {showMiniMap ? '🗺️ Hide Map' : '🗺️ Show Map'}
+          </button>
         </div>
+
 
         {dialog && (
           <div style={{
