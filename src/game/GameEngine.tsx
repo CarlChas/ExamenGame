@@ -144,13 +144,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           };
           setPlayer(updated);
 
-          const item: Item = {
-            id: Date.now().toString(),
-            name: 'Mystic Shard',
-            description: 'A fragment pulsing with energy.',
-            type: 'quest',
-          };
-          setInventory(prev => [...prev, item]);
           return;
         }
       }
