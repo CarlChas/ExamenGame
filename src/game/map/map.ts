@@ -53,6 +53,15 @@ const themes = ['corrupted', 'infernal', 'celestial', 'undead', 'elemental'];
 const prefixWords = ['Twisted', 'Ancient', 'Mystic', 'Forgotten', 'Sacred', 'Wretched'];
 const suffixWords = ['Woods', 'Sanctum', 'Vale', 'Pass', 'Ruins', 'Hollow'];
 
+function randomTheme(): string {
+    return themes[Math.floor(Math.random() * themes.length)];
+}
+
+function randomType(): AreaType {
+    const types: AreaType[] = ['wilderness', 'town', 'dungeon', 'city', 'village', 'camp'];
+    return types[Math.floor(Math.random() * types.length)];
+}
+
 const settlementNames = [
     'Eastridge', 'Westhaven', 'Oakmoor', 'Dunmere', 'Ravenhollow',
     'Thornbrook', 'Stonebridge', 'Glimmerford', 'Ironvale', 'Redfield'
@@ -75,6 +84,13 @@ const areaTypeLabels: Record<AreaType, string> = {
     dungeon: 'Dungeon',
 };
 
+const settlementBlobSizeRange: Partial<Record<AreaType, [number, number]>> = {
+    city: [8, 12],
+    town: [6, 8],
+    village: [3, 5],
+    camp: [2, 3]
+};
+
 const biomeSeeds: BiomeSeed[] = [];
 const reservedZones = new Set<string>();
 
@@ -87,30 +103,40 @@ interface BiomeSeed {
     namePrefix: string;
     nameSuffix: string;
     settlementName?: string;
+    occupiedCoords?: Set<string>; // blob tiles
 }
 
-function randomTheme(): string {
-    return themes[Math.floor(Math.random() * themes.length)];
-}
+function generateBlob(x: number, y: number, maxTiles: number): Set<string> {
+    const frontier = [`${x},${y}`];
+    const visited = new Set<string>();
 
-function randomType(): AreaType {
-    const types: AreaType[] = ['wilderness', 'town', 'dungeon', 'city', 'village', 'camp'];
-    return types[Math.floor(Math.random() * types.length)];
-}
+    while (frontier.length && visited.size < maxTiles) {
+        const current = frontier.shift()!;
+        if (visited.has(current) || reservedZones.has(current)) continue;
+        visited.add(current);
+        reservedZones.add(current);
 
-function reserveSurroundings(x: number, y: number, buffer = 2) {
-    for (let dx = -buffer; dx <= buffer; dx++) {
-        for (let dy = -buffer; dy <= buffer; dy++) {
-            reservedZones.add(`${x + dx},${y + dy}`);
-        }
+        const [cx, cy] = current.split(',').map(Number);
+        const neighbors = [
+            `${cx + 1},${cy}`,
+            `${cx - 1},${cy}`,
+            `${cx},${cy + 1}`,
+            `${cx},${cy - 1}`,
+        ];
+        neighbors.forEach(n => {
+            if (!visited.has(n) && !reservedZones.has(n) && Math.random() < 0.8) {
+                frontier.push(n);
+            }
+        });
     }
+    return visited;
 }
 
 function generateBiomeSeeds(seedCount = 6) {
     if (biomeSeeds.length > 0) return;
 
     let attempts = 0;
-    while (biomeSeeds.length < seedCount && attempts < seedCount * 10) {
+    while (biomeSeeds.length < seedCount && attempts < seedCount * 20) {
         const x = Math.floor(Math.random() * 20 - 10);
         const y = Math.floor(Math.random() * 20 - 10);
         const key = `${x},${y}`;
@@ -119,19 +145,47 @@ function generateBiomeSeeds(seedCount = 6) {
             continue;
         }
 
-        const type = randomType();
-        const theme = randomTheme();
         const prefix = prefixWords[Math.floor(Math.random() * prefixWords.length)];
         const suffix = suffixWords[Math.floor(Math.random() * suffixWords.length)];
 
-        const gateOffset = [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }][Math.floor(Math.random() * 4)];
-        const gateCoords = ['village', 'town', 'city', 'camp'].includes(type)
-            ? { x: x + gateOffset.x, y: y + gateOffset.y }
-            : undefined;
+        const baseTheme = randomTheme();
 
-        const settlementName = ['village', 'town', 'city', 'camp'].includes(type)
-            ? getUniqueSettlementName()
-            : undefined;
+        // Randomly decide if this will be a settlement
+        const isSettlement = Math.random() < 0.6; // ~60% chance
+
+        let type: AreaType = 'wilderness';
+        let blob: Set<string> | undefined;
+        let settlementName: string | undefined;
+        let theme = baseTheme;
+        let gateCoords: { x: number; y: number } | undefined;
+
+        if (isSettlement) {
+            const typeChoices: AreaType[] = ['camp', 'village', 'town', 'city'];
+            type = typeChoices[Math.floor(Math.random() * typeChoices.length)];
+            const [min, max] = settlementBlobSizeRange[type] ?? [3, 4];
+            const blobSize = Math.floor(Math.random() * (max - min + 1)) + min;
+            blob = generateBlob(x, y, blobSize);
+
+            settlementName = getUniqueSettlementName();
+            theme = type;
+
+            const gateOffset = [
+                { x: 0, y: 1 },
+                { x: 1, y: 0 },
+                { x: 0, y: -1 },
+                { x: -1, y: 0 },
+            ][Math.floor(Math.random() * 4)];
+            gateCoords = { x: x + gateOffset.x, y: y + gateOffset.y };
+
+            if (gateCoords) reservedZones.add(`${gateCoords.x},${gateCoords.y}`);
+        } else {
+            type = randomType();
+            const size = Math.floor(Math.random() * (8 - 4 + 1)) + 4;
+            blob = generateBlob(x, y, size);
+        }
+
+        // Apply blob to all cases
+        // if (blob) reservedZones.forEach(coord => blob?.add(coord));
 
         biomeSeeds.push({
             x,
@@ -141,21 +195,30 @@ function generateBiomeSeeds(seedCount = 6) {
             namePrefix: prefix,
             nameSuffix: suffix,
             gateCoords,
-            settlementName
+            settlementName,
+            occupiedCoords: blob
         });
 
-        if (['village', 'town', 'camp', 'city'].includes(type)) {
-            reserveSurroundings(x, y);
-        }
-
-        if (gateCoords) reservedZones.add(`${gateCoords.x},${gateCoords.y}`);
         attempts++;
     }
+}
+
+function getSettlementBiome(x: number, y: number): BiomeSeed | undefined {
+    const coordKey = `${x},${y}`;
+    return biomeSeeds.find(seed => seed.settlementName && seed.occupiedCoords?.has(coordKey));
 }
 
 function getBiomeForCoords(x: number, y: number): BiomeSeed {
     generateBiomeSeeds();
 
+    const coordKey = `${x},${y}`;
+    for (const seed of biomeSeeds) {
+        if (seed.occupiedCoords?.has(coordKey)) {
+            return seed;
+        }
+    }
+
+    // fallback (shouldn't hit often)
     let closest = biomeSeeds[0];
     let minDist = Infinity;
 
@@ -168,42 +231,23 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
             closest = seed;
         }
     }
+
     return closest;
 }
 
-function generateSafePosition(existing: { x: number; y: number }[], radius = 25, padding = 50): { x: number; y: number } {
-    let attempts = 0;
-    while (attempts < 100) {
-        const x = Math.floor(Math.random() * (600 - 2 * padding) + padding);
-        const y = Math.floor(Math.random() * (400 - 2 * padding) + padding);
-        const tooClose = existing.some(pos => {
-            const dx = pos.x - x;
-            const dy = pos.y - y;
-            return Math.sqrt(dx * dx + dy * dy) < radius * 2;
-        });
-        if (!tooClose) return { x, y };
-        attempts++;
-    }
-    return { x: padding, y: padding };
-}
-
-function getLandmarkTypesFor(type: AreaType): LandmarkType[] {
-    switch (type) {
-        case 'city': return ['blacksmith', 'tavern', 'inn', 'market', 'temple', 'guild', 'fountain'];
-        case 'town': return ['blacksmith', 'inn', 'market', 'temple'];
-        case 'village': return ['tavern', 'fountain'];
-        case 'camp': return ['tavern'];
-        default: return [];
-    }
-}
 
 export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
     if (mapData.has(key)) return mapData.get(key)!;
 
+    generateBiomeSeeds();
+
+    const settlementBiome = getSettlementBiome(x, y);
     const biome = getBiomeForCoords(x, y);
-    const type = biome.type;
-    const theme = biome.theme;
+    const seed = settlementBiome || biome;
+
+    const type = seed.type;
+    const theme = seed.theme;
 
     const positions: { x: number; y: number }[] = [];
 
@@ -235,17 +279,12 @@ export function getArea(x: number, y: number): Area {
         };
     });
 
-    const isGateTile = biome.gateCoords?.x === x && biome.gateCoords?.y === y;
-    const isCoreTile = biome.x === x && biome.y === y;
+    const isGateTile = seed.gateCoords?.x === x && seed.gateCoords?.y === y;
+    const isCoreTile = seed.x === x && seed.y === y;
 
-    let name: string;
-    if (['village', 'town', 'city', 'camp'].includes(type) && biome.settlementName) {
-        name = `${areaTypeLabels[type]} of ${biome.settlementName}`;
-    } else if (biome.namePrefix && biome.nameSuffix) {
-        name = `${biome.namePrefix} ${biome.nameSuffix} (${theme})`;
-    } else {
-        name = `Unknown Area`;
-    }
+    let name: string = seed.settlementName
+        ? `${areaTypeLabels[seed.type]} of ${seed.settlementName}`
+        : `${seed.namePrefix} ${seed.nameSuffix}`;
 
     const role: Area['role'] = isGateTile ? 'gate' : isCoreTile ? 'core' : undefined;
 
@@ -262,4 +301,30 @@ export function getArea(x: number, y: number): Area {
 
     mapData.set(key, area);
     return area;
+}
+
+function generateSafePosition(existing: { x: number; y: number }[], radius = 25, padding = 50): { x: number; y: number } {
+    let attempts = 0;
+    while (attempts < 100) {
+        const x = Math.floor(Math.random() * (600 - 2 * padding) + padding);
+        const y = Math.floor(Math.random() * (400 - 2 * padding) + padding);
+        const tooClose = existing.some(pos => {
+            const dx = pos.x - x;
+            const dy = pos.y - y;
+            return Math.sqrt(dx * dx + dy * dy) < radius * 2;
+        });
+        if (!tooClose) return { x, y };
+        attempts++;
+    }
+    return { x: padding, y: padding };
+}
+
+function getLandmarkTypesFor(type: AreaType): LandmarkType[] {
+    switch (type) {
+        case 'city': return ['blacksmith', 'tavern', 'inn', 'market', 'temple', 'guild', 'fountain'];
+        case 'town': return ['blacksmith', 'inn', 'market', 'temple'];
+        case 'village': return ['tavern', 'fountain'];
+        case 'camp': return ['tavern'];
+        default: return [];
+    }
 }

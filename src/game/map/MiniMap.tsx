@@ -23,6 +23,10 @@ const biomeColors: Record<string, string> = {
     undead: '#adb5bd',
     elemental: '#fca311',
     default: '#666',
+    city: '#888', // ← now valid
+    town: '#999',
+    camp: '#aaa',
+    village: '#bbb',
 };
 
 /* const getEnemyEmoji = (theme?: string) => {
@@ -157,8 +161,8 @@ const MiniMap = ({ currentX, currentY }: Props) => {
 
                             if (isCurrent) {
                                 emoji = '🧍';
-                            /* } else if (area.enemies?.length) {
-                                emoji = getEnemyEmoji(area.enemies[0].theme); */
+                                /* } else if (area.enemies?.length) {
+                                    emoji = getEnemyEmoji(area.enemies[0].theme); */
                             }
                             else {
                                 emoji = getAreaEmoji(area.type);
