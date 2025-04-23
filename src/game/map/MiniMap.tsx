@@ -25,7 +25,7 @@ const biomeColors: Record<string, string> = {
     default: '#666',
 };
 
-const getEnemyEmoji = (theme?: string) => {
+/* const getEnemyEmoji = (theme?: string) => {
     switch (theme) {
         case 'undead': return '💀';
         case 'elemental': return '🔥';
@@ -34,7 +34,7 @@ const getEnemyEmoji = (theme?: string) => {
         case 'infernal': return '😈';
         default: return '👾';
     }
-};
+}; */
 
 const getAreaEmoji = (type?: string): string => {
     switch (type) {
@@ -157,8 +157,8 @@ const MiniMap = ({ currentX, currentY }: Props) => {
 
                             if (isCurrent) {
                                 emoji = '🧍';
-                            } else if (area.enemies?.length) {
-                                emoji = getEnemyEmoji(area.enemies[0].theme);
+                            /* } else if (area.enemies?.length) {
+                                emoji = getEnemyEmoji(area.enemies[0].theme); */
                             }
                             else {
                                 emoji = getAreaEmoji(area.type);

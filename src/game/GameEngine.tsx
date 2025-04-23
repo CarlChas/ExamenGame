@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getArea, Area, getMapData, setMapData } from './map/map';
 import Inventory from './inventory/Inventory';
-import { generateRandomLoot, LootItem, Rarity } from '../game/loot';
+import { LootItem } from '../game/loot';
 import StatPanel from './ui/StatPanel';
 import CharacterStats from './ui/CharacterStats';
 import { Character } from './types/characterTypes';
