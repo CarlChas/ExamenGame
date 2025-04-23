@@ -52,7 +52,19 @@ export function setMapData(data: Record<string, Area>) {
 const themes = ['corrupted', 'infernal', 'celestial', 'undead', 'elemental'];
 const prefixWords = ['Twisted', 'Ancient', 'Mystic', 'Forgotten', 'Sacred', 'Wretched'];
 const suffixWords = ['Woods', 'Sanctum', 'Vale', 'Pass', 'Ruins', 'Hollow'];
-const biomeNames = ['tundra', 'desert', 'forest', 'swamp', 'wastes'];
+
+const settlementNames = [
+    'Eastridge', 'Westhaven', 'Oakmoor', 'Dunmere', 'Ravenhollow',
+    'Thornbrook', 'Stonebridge', 'Glimmerford', 'Ironvale', 'Redfield'
+];
+const usedSettlementNames = new Set<string>();
+function getUniqueSettlementName(): string {
+    const available = settlementNames.filter(name => !usedSettlementNames.has(name));
+    if (available.length === 0) return 'Unnamed Settlement';
+    const name = available[Math.floor(Math.random() * available.length)];
+    usedSettlementNames.add(name);
+    return name;
+}
 
 const areaTypeLabels: Record<AreaType, string> = {
     city: 'City',
@@ -69,12 +81,12 @@ const reservedZones = new Set<string>();
 interface BiomeSeed {
     x: number;
     y: number;
-    name: string;
     theme: string;
     type: AreaType;
     gateCoords?: { x: number; y: number };
     namePrefix: string;
     nameSuffix: string;
+    settlementName?: string;
 }
 
 function randomTheme(): string {
@@ -111,14 +123,26 @@ function generateBiomeSeeds(seedCount = 6) {
         const theme = randomTheme();
         const prefix = prefixWords[Math.floor(Math.random() * prefixWords.length)];
         const suffix = suffixWords[Math.floor(Math.random() * suffixWords.length)];
-        const name = biomeNames[Math.floor(Math.random() * biomeNames.length)];
 
         const gateOffset = [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }][Math.floor(Math.random() * 4)];
         const gateCoords = ['village', 'town', 'city', 'camp'].includes(type)
             ? { x: x + gateOffset.x, y: y + gateOffset.y }
             : undefined;
 
-        biomeSeeds.push({ x, y, name, theme, type, namePrefix: prefix, nameSuffix: suffix, gateCoords });
+        const settlementName = ['village', 'town', 'city', 'camp'].includes(type)
+            ? getUniqueSettlementName()
+            : undefined;
+
+        biomeSeeds.push({
+            x,
+            y,
+            theme,
+            type,
+            namePrefix: prefix,
+            nameSuffix: suffix,
+            gateCoords,
+            settlementName
+        });
 
         if (['village', 'town', 'camp', 'city'].includes(type)) {
             reserveSurroundings(x, y);
@@ -188,7 +212,7 @@ export function getArea(x: number, y: number): Area {
         ? [(() => {
             const pos = generateSafePosition(positions);
             return {
-                ...getRandomEnemyForBiomeAndTheme(biome.name, theme, 1),
+                ...getRandomEnemyForBiomeAndTheme(theme, theme, 1),
                 ...pos,
                 radius: 20,
             };
@@ -214,9 +238,14 @@ export function getArea(x: number, y: number): Area {
     const isGateTile = biome.gateCoords?.x === x && biome.gateCoords?.y === y;
     const isCoreTile = biome.x === x && biome.y === y;
 
-    const name = isCoreTile
-        ? `${areaTypeLabels[type]} of ${biome.namePrefix} ${biome.nameSuffix}`
-        : `${biome.namePrefix} ${biome.nameSuffix} (${theme})`;
+    let name: string;
+    if (['village', 'town', 'city', 'camp'].includes(type) && biome.settlementName) {
+        name = `${areaTypeLabels[type]} of ${biome.settlementName}`;
+    } else if (biome.namePrefix && biome.nameSuffix) {
+        name = `${biome.namePrefix} ${biome.nameSuffix} (${theme})`;
+    } else {
+        name = `Unknown Area`;
+    }
 
     const role: Area['role'] = isGateTile ? 'gate' : isCoreTile ? 'core' : undefined;
 
