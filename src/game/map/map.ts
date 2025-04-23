@@ -237,11 +237,13 @@ export function getArea(x: number, y: number): Area {
     const key = `${x},${y}`;
     if (mapData.has(key)) return mapData.get(key)!;
 
-    const settlementBiome = getSettlementBiome(x, y);
-    const biome = getBiomeForCoords(x, y);
-    const seed = settlementBiome || biome;
+    let seed = getSettlementBiome(x, y);
+    if (!seed) {
+        seed = getBiomeForCoords(x, y);
+    }
 
-    const type = seed.type;
+    const isSettlementTile = seed.settlementName && seed.occupiedCoords?.has(key);
+    const type = isSettlementTile ? seed.type : 'wilderness';
     const theme = seed.theme;
     const positions: { x: number; y: number }[] = [];
 
@@ -260,7 +262,7 @@ export function getArea(x: number, y: number): Area {
     let npcs: NPC[] = [];
     let landmarks: Landmark[] = [];
 
-    if (settlementBiome && ['city', 'town', 'village', 'camp'].includes(settlementBiome.type)) {
+    if (seed.settlementName && ['city', 'town', 'village', 'camp'].includes(seed.type)) {
         const landmarkTypes = getLandmarkTypesFor(type);
         landmarks = landmarkTypes.map(landmarkType => {
             const pos = generateSafePosition(positions);
@@ -277,8 +279,8 @@ export function getArea(x: number, y: number): Area {
     const isGateTile = seed.gateCoords?.x === x && seed.gateCoords?.y === y;
     const isCoreTile = seed.x === x && seed.y === y;
 
-    const name = settlementBiome && settlementBiome.settlementName
-        ? `${areaTypeLabels[settlementBiome.type]} of ${settlementBiome.settlementName}`
+    const name = seed.settlementName
+        ? `${areaTypeLabels[seed.type]} of ${seed.settlementName}`
         : `${seed.namePrefix} ${seed.nameSuffix}`;
 
     const role: Area['role'] = isGateTile ? 'gate' : isCoreTile ? 'core' : undefined;
