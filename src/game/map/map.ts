@@ -46,6 +46,7 @@ export interface BiomeSeed {
 }
 
 // === Constants ===
+const roadTiles = new Set<string>();
 const mapData = new Map<string, Area>();
 const biomeSeeds: BiomeSeed[] = [];
 const reservedZones = new Set<string>();
@@ -172,6 +173,27 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
         const blobSize = Math.floor(Math.random() * (max - min + 1)) + min;
         const blob = generateBlob(xBase, yBase, blobSize);
 
+        // Prevent adjacency to other settlements
+        const minBuffer = 2;
+        const touchesOtherSettlement = biomeSeeds.some(existing => {
+            if (!existing.settlementName || !existing.occupiedCoords) return false;
+            for (const coord of blob) {
+                const [cx, cy] = coord.split(',').map(Number);
+                for (let dx = -minBuffer; dx <= minBuffer; dx++) {
+                    for (let dy = -minBuffer; dy <= minBuffer; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const neighborKey = `${cx + dx},${cy + dy}`;
+                        if (existing.occupiedCoords.has(neighborKey)) return true;
+                    }
+                }
+            }
+            return false;
+        });
+
+        if (touchesOtherSettlement) {
+            return getBiomeForCoords(x + 1, y); // trigger retry in a new spot
+        }
+
         const actualSize = blob.size;
         if (actualSize >= 6) type = 'city';
         else if (actualSize >= 4) type = 'town';
@@ -198,6 +220,37 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
             occupiedCoords: blob
         };
         biomeSeeds.push(seed);
+
+        // === Connect to nearest other settlement ===
+        const otherGates = biomeSeeds.filter(b => b.settlementName && b.gateCoords && b !== seed);
+        if (otherGates.length && gateCoords) {
+            let nearest = otherGates[0];
+            let minDist = Infinity;
+            for (const b of otherGates) {
+                const dx = b.gateCoords!.x - gateCoords.x;
+                const dy = b.gateCoords!.y - gateCoords.y;
+                const dist = dx * dx + dy * dy;
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = b;
+                }
+            }
+            if (nearest.gateCoords) {
+                let x = gateCoords.x;
+                let y = gateCoords.y;
+                const targetX = nearest.gateCoords.x;
+                const targetY = nearest.gateCoords.y;
+                while (x !== targetX || y !== targetY) {
+                    roadTiles.add(`${x},${y}`);
+                    if (x < targetX) x++;
+                    else if (x > targetX) x--;
+                    else if (y < targetY) y++;
+                    else if (y > targetY) y--;
+                }
+                roadTiles.add(`${targetX},${targetY}`);
+            }
+        }
+
         return seed;
     } else {
         const theme = randomTheme();
