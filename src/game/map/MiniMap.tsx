@@ -159,11 +159,19 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                         const isRoad = typeof window !== 'undefined' && (window as any).roadTiles?.has(key);
                         if (isRoad) {
                             bgColor = '#a07d56'; // road color
-                            emoji = ''; // or '🛣️'
+                            emoji = '🛣️';
                         }
 
                         if (area) {
                             bgColor = biomeColors[area.theme] || biomeColors.default;
+
+                            if (isCurrent) {
+                                emoji = '🧍';
+                            } else if (area.role === 'gate') {
+                                emoji = '🚪';
+                            } else {
+                                emoji = getAreaEmoji(area.type);
+                            }
 
                             if (isCurrent) {
                                 emoji = '🧍';
