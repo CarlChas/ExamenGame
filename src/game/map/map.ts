@@ -281,12 +281,37 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
                 const targetY = nearest.gateCoords.y;
 
                 while (cx !== targetX || cy !== targetY) {
-                    roadTiles.add(`${cx},${cy}`);
+                    const key = `${cx},${cy}`;
+
+                    const isTouchingSettlement = biomeSeeds.some(seed => {
+                        if (!seed.settlementName || !seed.occupiedCoords) return false;
+
+                        // Allow road on the gate
+                        if (seed.gateCoords?.x === cx && seed.gateCoords?.y === cy) return false;
+
+                        // Check 3x3 neighborhood for any part of a settlement
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dy = -1; dy <= 1; dy++) {
+                                const neighborKey = `${cx + dx},${cy + dy}`;
+                                if (seed.occupiedCoords.has(neighborKey)) return true;
+                            }
+                        }
+
+                        return false;
+                    });
+
+                    if (!isTouchingSettlement) {
+                        roadTiles.add(key);
+                    }
+
+                    // Move step-by-step toward the target gate
                     if (cx < targetX) cx++;
                     else if (cx > targetX) cx--;
                     else if (cy < targetY) cy++;
                     else if (cy > targetY) cy--;
                 }
+
+
 
                 roadTiles.add(`${targetX},${targetY}`);
             }
@@ -323,8 +348,15 @@ export function getMapData(): Record<string, Area> {
         obj[key] = value;
     });
 
-    const gateTile = [...mapData.entries()].find(([_, area]) => area.role === 'gate');
-    console.log('🧾 First gate found in mapData:', gateTile);
+    /*     const gateTile = [...mapData.entries()].find(([_, area]) => area.role === 'gate');
+        console.log('🧾 First gate found in mapData:', gateTile); */
+
+    roadTiles.forEach(coord => {
+        if (!mapData.has(coord)) {
+            const [x, y] = coord.split(',').map(Number);
+            getArea(x, y); // 👈 ensure road tiles exist in map
+        }
+    });
 
     return obj;
 }
@@ -389,7 +421,7 @@ export function getArea(x: number, y: number): Area {
     if (role === 'gate') {
         console.log('🚪 This tile is a GATE:', key, 'Name:', name);
     }
-    console.log('Area seed for', key, '→', seed.settlementName, seed.type, seed.theme);
+    // console.log('Area seed for', key, '→', seed.settlementName, seed.type, seed.theme);
 
 
     if (isGateTile) console.log('THIS TILE IS A GATE:', key);
@@ -408,4 +440,8 @@ export function getArea(x: number, y: number): Area {
 
     mapData.set(key, area);
     return area;
+}
+
+export function getRoadTiles(): Set<string> {
+    return roadTiles;
 }

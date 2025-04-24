@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { getMapData } from './map';
+import { getMapData, getRoadTiles } from './map';
+
+const roads = getRoadTiles(); // Set<string>
 
 interface Props {
     currentX: number;
@@ -128,18 +130,16 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                         let emoji = '❓';
                         let bgColor = typeColors[area?.type ?? area?.theme] || typeColors.default;
 
-                        // Simulated road detection
-                        const isRoad = typeof window !== 'undefined' && (window as any).roadTiles?.has(key);
+                        const isRoad = roads.has(key);
                         if (isRoad) {
-                            bgColor = typeColors.road;
-                            emoji = '🛣️';
+                            console.log('✅ ROAD TILE MATCHED:', key);
                         }
+
 
                         if (area) {
                             if (isCurrent) {
                                 emoji = '🧍';
                             } else if (area?.role === 'gate') {
-                                console.log('🎯 Rendering gate at:', key, area.name);
                                 emoji = '🚪';
                             } else if (isRoad) {
                                 emoji = '🛣️';
@@ -147,6 +147,9 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                                 emoji = getAreaEmoji(area?.type);
                             }
 
+                            if (isRoad) {
+                                bgColor = '#a07d56';
+                            }
                         }
 
                         return (
