@@ -178,9 +178,6 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                                 /* } else if (area.enemies?.length) {
                                     emoji = getEnemyEmoji(area.enemies[0].theme); */
                             }
-                            else {
-                                emoji = getAreaEmoji(area.type);
-                            }
                         }
 
                         return (
