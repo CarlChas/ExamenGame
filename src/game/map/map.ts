@@ -149,8 +149,17 @@ function generateBlob(x: number, y: number, maxTiles: number): Set<string> {
 
 function getSettlementBiome(x: number, y: number): BiomeSeed | undefined {
     const coordKey = `${x},${y}`;
-    return biomeSeeds.find(seed => seed.settlementName && seed.occupiedCoords?.has(coordKey));
+    return biomeSeeds.find(seed => {
+        return (
+            seed.settlementName &&
+            (
+                seed.occupiedCoords?.has(coordKey) || // normal tiles
+                (seed.gateCoords?.x === x && seed.gateCoords?.y === y) // include gate tile
+            )
+        );
+    });
 }
+
 
 function getBiomeForCoords(x: number, y: number): BiomeSeed {
     const coordKey = `${x},${y}`;
@@ -191,7 +200,7 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
         });
 
         if (touchesOtherSettlement) {
-            return getBiomeForCoords(x + 1, y); // trigger retry in a new spot
+            return getBiomeForCoords(x + 1, y); // retry in new location
         }
 
         const actualSize = blob.size;
@@ -202,11 +211,35 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
 
         const theme = type;
         const name = getUniqueSettlementName();
-        const gateOffset = [
-            { x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }
-        ][Math.floor(Math.random() * 4)];
-        const gateCoords = { x: xBase + gateOffset.x, y: yBase + gateOffset.y };
-        reservedZones.add(`${gateCoords.x},${gateCoords.y}`);
+
+        let gateCoords: { x: number; y: number } | undefined;
+
+        if (type !== 'camp') {
+            const blobCoords = Array.from(blob);
+            for (const coord of blobCoords) {
+                const [gx, gy] = coord.split(',').map(Number);
+                const neighbors = [
+                    { x: gx + 1, y: gy },
+                    { x: gx - 1, y: gy },
+                    { x: gx, y: gy + 1 },
+                    { x: gx, y: gy - 1 },
+                ];
+
+                for (const neighbor of neighbors) {
+                    const key = `${neighbor.x},${neighbor.y}`;
+                    if (!blob.has(key) && !reservedZones.has(key)) {
+                        gateCoords = neighbor;
+                        reservedZones.add(key);
+                        blob.add(key);
+                        console.log('🛠 Gate selected at:', gateCoords, 'for', name);
+
+                        break;
+                    }
+                }
+
+                if (gateCoords) break;
+            }
+        }
 
         const seed: BiomeSeed = {
             x: xBase,
@@ -215,13 +248,18 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
             type,
             namePrefix: prefix,
             nameSuffix: suffix,
-            gateCoords,
             settlementName: name,
-            occupiedCoords: blob
+            occupiedCoords: blob,
+            ...(gateCoords && { gateCoords }),
         };
+
         biomeSeeds.push(seed);
 
-        // === Connect to nearest other settlement ===
+        if (gateCoords) {
+            getArea(gateCoords.x, gateCoords.y); // ← now the seed is known
+        }
+
+        // === Connect to nearest other settlement via road ===
         const otherGates = biomeSeeds.filter(b => b.settlementName && b.gateCoords && b !== seed);
         if (otherGates.length && gateCoords) {
             let nearest = otherGates[0];
@@ -235,24 +273,29 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
                     nearest = b;
                 }
             }
+
             if (nearest.gateCoords) {
-                let x = gateCoords.x;
-                let y = gateCoords.y;
+                let cx = gateCoords.x;
+                let cy = gateCoords.y;
                 const targetX = nearest.gateCoords.x;
                 const targetY = nearest.gateCoords.y;
-                while (x !== targetX || y !== targetY) {
-                    roadTiles.add(`${x},${y}`);
-                    if (x < targetX) x++;
-                    else if (x > targetX) x--;
-                    else if (y < targetY) y++;
-                    else if (y > targetY) y--;
+
+                while (cx !== targetX || cy !== targetY) {
+                    roadTiles.add(`${cx},${cy}`);
+                    if (cx < targetX) cx++;
+                    else if (cx > targetX) cx--;
+                    else if (cy < targetY) cy++;
+                    else if (cy > targetY) cy--;
                 }
+
                 roadTiles.add(`${targetX},${targetY}`);
             }
         }
 
         return seed;
+
     } else {
+        // Non-settlement biome
         const theme = randomTheme();
         const type = randomType();
         const blob = generateBlob(xBase, yBase, Math.floor(Math.random() * 3) + 3);
@@ -264,12 +307,14 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
             type,
             namePrefix: prefix,
             nameSuffix: suffix,
-            occupiedCoords: blob
+            occupiedCoords: blob,
         };
+
         biomeSeeds.push(seed);
         return seed;
     }
 }
+
 
 // === API ===
 export function getMapData(): Record<string, Area> {
@@ -277,6 +322,10 @@ export function getMapData(): Record<string, Area> {
     mapData.forEach((value, key) => {
         obj[key] = value;
     });
+
+    const gateTile = [...mapData.entries()].find(([_, area]) => area.role === 'gate');
+    console.log('🧾 First gate found in mapData:', gateTile);
+
     return obj;
 }
 
@@ -337,6 +386,14 @@ export function getArea(x: number, y: number): Area {
         : `${seed.namePrefix} ${seed.nameSuffix}`;
 
     const role: Area['role'] = isGateTile ? 'gate' : isCoreTile ? 'core' : undefined;
+    if (role === 'gate') {
+        console.log('🚪 This tile is a GATE:', key, 'Name:', name);
+    }
+    console.log('Area seed for', key, '→', seed.settlementName, seed.type, seed.theme);
+
+
+    if (isGateTile) console.log('THIS TILE IS A GATE:', key);
+
 
     const area: Area = {
         name,

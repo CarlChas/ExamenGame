@@ -11,34 +11,21 @@ const WALL_THICKNESS = 4;
 const VIEW_WIDTH = 15;
 const VIEW_HEIGHT = 15;
 
-const biomeColors: Record<string, string> = {
-    tundra: '#aee1f9',
-    desert: '#f4e2b0',
-    forest: '#88c799',
-    swamp: '#7e9c91',
-    wastes: '#b5b5b5',
-    corrupted: '#6d597a',
-    infernal: '#d62828',
-    celestial: '#9d4edd',
-    undead: '#adb5bd',
-    elemental: '#fca311',
+const typeColors: Record<string, string> = {
+    city: '#3a4f8f',
+    town: '#4d6b3a',
+    village: '#8f5c3a',
+    camp: '#444444',
+    dungeon: '#2a2a2a',
+    wilderness: '#34663a',
+    corrupted: '#663366',
+    infernal: '#8f1e1e',
+    celestial: '#6b6bcf',
+    undead: '#555577',
+    elemental: '#cf9f3f',
     default: '#666',
-    city: '#888', // ← now valid
-    town: '#999',
-    camp: '#aaa',
-    village: '#bbb',
+    road: '#a07d56',
 };
-
-/* const getEnemyEmoji = (theme?: string) => {
-    switch (theme) {
-        case 'undead': return '💀';
-        case 'elemental': return '🔥';
-        case 'corrupted': return '🕷️';
-        case 'celestial': return '✨';
-        case 'infernal': return '😈';
-        default: return '👾';
-    }
-}; */
 
 const getAreaEmoji = (type?: string): string => {
     switch (type) {
@@ -53,7 +40,6 @@ const getAreaEmoji = (type?: string): string => {
     }
 };
 
-
 const MiniMap = ({ currentX, currentY }: Props) => {
     const map = getMapData();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -65,6 +51,16 @@ const MiniMap = ({ currentX, currentY }: Props) => {
         const [x, y] = key.split(',').map(Number);
         return { x, y, key };
     });
+
+    const centerOnPlayer = () => {
+        const x = -(currentX * TILE_SIZE - (VIEW_WIDTH * TILE_SIZE) / 2);
+        const y = -(currentY * TILE_SIZE - (VIEW_HEIGHT * TILE_SIZE) / 2);
+        setOffset({ x, y });
+    };
+
+    useEffect(() => {
+        centerOnPlayer();
+    }, [currentX, currentY]);
 
     const handleMouseDown = (e: React.MouseEvent) => {
         isDragging.current = true;
@@ -84,33 +80,7 @@ const MiniMap = ({ currentX, currentY }: Props) => {
         }
     };
 
-    const centerOnPlayer = () => {
-        const x = -(currentX * TILE_SIZE - (VIEW_WIDTH * TILE_SIZE) / 2);
-        const y = -(currentY * TILE_SIZE - (VIEW_HEIGHT * TILE_SIZE) / 2);
-        setOffset({ x, y });
-    };
-
-    useEffect(() => {
-        centerOnPlayer();
-    }, [currentX, currentY]);
-
     const drawnWalls = new Set<string>();
-
-    const typeColors: Record<string, string> = {
-        city: '#3a4f8f',
-        town: '#4d6b3a',
-        village: '#8f5c3a',
-        camp: '#444444',
-        dungeon: '#2a2a2a',
-        wilderness: '#34663a',
-        corrupted: '#663366',
-        infernal: '#8f1e1e',
-        celestial: '#6b6bcf',
-        undead: '#555577',
-        elemental: '#cf9f3f',
-        default: '#666',
-    };
-
 
     return (
         <div style={{
@@ -123,6 +93,9 @@ const MiniMap = ({ currentX, currentY }: Props) => {
             fontFamily: 'sans-serif',
             userSelect: 'none',
         }}>
+            <div style={{ color: '#fff', fontSize: '0.75rem' }}>
+                Coords: ({currentX}, {currentY})
+            </div>
 
             <div style={{ marginBottom: 4, color: '#fff', display: 'flex', justifyContent: 'space-between' }}>
                 <span>🗺 Map</span>
@@ -152,32 +125,28 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                         const area = map[key];
                         const isCurrent = x === currentX && y === currentY;
 
-                        let bgColor = typeColors[area.type ?? area.theme] || typeColors.default;
+                        let emoji = '❓';
+                        let bgColor = typeColors[area?.type ?? area?.theme] || typeColors.default;
 
-                        let emoji = '';
-
+                        // Simulated road detection
                         const isRoad = typeof window !== 'undefined' && (window as any).roadTiles?.has(key);
                         if (isRoad) {
-                            bgColor = '#a07d56'; // road color
+                            bgColor = typeColors.road;
                             emoji = '🛣️';
                         }
 
                         if (area) {
-                            bgColor = biomeColors[area.theme] || biomeColors.default;
-
                             if (isCurrent) {
                                 emoji = '🧍';
-                            } else if (area.role === 'gate') {
+                            } else if (area?.role === 'gate') {
+                                console.log('🎯 Rendering gate at:', key, area.name);
                                 emoji = '🚪';
+                            } else if (isRoad) {
+                                emoji = '🛣️';
                             } else {
-                                emoji = getAreaEmoji(area.type);
+                                emoji = getAreaEmoji(area?.type);
                             }
 
-                            if (isCurrent) {
-                                emoji = '🧍';
-                                /* } else if (area.enemies?.length) {
-                                    emoji = getEnemyEmoji(area.enemies[0].theme); */
-                            }
                         }
 
                         return (
@@ -206,65 +175,56 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                     {/* Walls */}
                     {coords.flatMap(({ x, y }) => {
                         const area = map[`${x},${y}`];
-                        if (!area || !area.blocked) return [];
+                        if (!area?.blocked) return [];
 
                         const wallKey = (dir: string) => `${dir}-${x},${y}`;
                         const walls = [];
 
+                        const wallStyle = (pos: Partial<React.CSSProperties>): React.CSSProperties => ({
+                            position: 'absolute',
+                            backgroundColor: 'red',
+                            ...pos
+                        });
+
+
                         if (area.blocked.north && !drawnWalls.has(wallKey('north'))) {
                             drawnWalls.add(wallKey('north'));
-                            walls.push(
-                                <div key={wallKey('north')} style={{
-                                    position: 'absolute',
-                                    left: x * TILE_SIZE - 1,
-                                    top: y * TILE_SIZE - WALL_THICKNESS / 2,
-                                    width: TILE_SIZE + 2,
-                                    height: WALL_THICKNESS,
-                                    backgroundColor: 'red',
-                                }} />
-                            );
+                            walls.push(<div key={wallKey('north')} style={wallStyle({
+                                left: x * TILE_SIZE - 1,
+                                top: y * TILE_SIZE - WALL_THICKNESS / 2,
+                                width: TILE_SIZE + 2,
+                                height: WALL_THICKNESS,
+                            })} />);
                         }
 
                         if (area.blocked.south && !drawnWalls.has(wallKey('south'))) {
                             drawnWalls.add(wallKey('south'));
-                            walls.push(
-                                <div key={wallKey('south')} style={{
-                                    position: 'absolute',
-                                    left: x * TILE_SIZE - 1,
-                                    top: (y + 1) * TILE_SIZE - WALL_THICKNESS / 2,
-                                    width: TILE_SIZE + 2,
-                                    height: WALL_THICKNESS,
-                                    backgroundColor: 'red',
-                                }} />
-                            );
+                            walls.push(<div key={wallKey('south')} style={wallStyle({
+                                left: x * TILE_SIZE - 1,
+                                top: (y + 1) * TILE_SIZE - WALL_THICKNESS / 2,
+                                width: TILE_SIZE + 2,
+                                height: WALL_THICKNESS,
+                            })} />);
                         }
 
                         if (area.blocked.west && !drawnWalls.has(wallKey('west'))) {
                             drawnWalls.add(wallKey('west'));
-                            walls.push(
-                                <div key={wallKey('west')} style={{
-                                    position: 'absolute',
-                                    top: y * TILE_SIZE - 1,
-                                    left: x * TILE_SIZE - WALL_THICKNESS / 2,
-                                    width: WALL_THICKNESS,
-                                    height: TILE_SIZE + 2,
-                                    backgroundColor: 'red',
-                                }} />
-                            );
+                            walls.push(<div key={wallKey('west')} style={wallStyle({
+                                top: y * TILE_SIZE - 1,
+                                left: x * TILE_SIZE - WALL_THICKNESS / 2,
+                                width: WALL_THICKNESS,
+                                height: TILE_SIZE + 2,
+                            })} />);
                         }
 
                         if (area.blocked.east && !drawnWalls.has(wallKey('east'))) {
                             drawnWalls.add(wallKey('east'));
-                            walls.push(
-                                <div key={wallKey('east')} style={{
-                                    position: 'absolute',
-                                    top: y * TILE_SIZE - 1,
-                                    left: (x + 1) * TILE_SIZE - WALL_THICKNESS / 2,
-                                    width: WALL_THICKNESS,
-                                    height: TILE_SIZE + 2,
-                                    backgroundColor: 'red',
-                                }} />
-                            );
+                            walls.push(<div key={wallKey('east')} style={wallStyle({
+                                top: y * TILE_SIZE - 1,
+                                left: (x + 1) * TILE_SIZE - WALL_THICKNESS / 2,
+                                width: WALL_THICKNESS,
+                                height: TILE_SIZE + 2,
+                            })} />);
                         }
 
                         return walls;
