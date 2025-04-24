@@ -71,10 +71,10 @@ const areaTypeLabels: Record<AreaType, string> = {
 };
 
 const settlementBlobSizeRange: Partial<Record<AreaType, [number, number]>> = {
-    city: [4, 6],
-    town: [3, 5],
-    village: [2, 3],
-    camp: [1, 2],
+    city: [12, 20],
+    town: [8, 11],
+    village: [4, 7],
+    camp: [1, 3],
 };
 
 // === Utility Functions ===
@@ -195,9 +195,9 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
         }
 
         const actualSize = blob.size;
-        if (actualSize >= 6) type = 'city';
-        else if (actualSize >= 4) type = 'town';
-        else if (actualSize >= 2) type = 'village';
+        if (actualSize >= 12) type = 'city';
+        else if (actualSize >= 8) type = 'town';
+        else if (actualSize >= 4) type = 'village';
         else type = 'camp';
 
         const theme = type;

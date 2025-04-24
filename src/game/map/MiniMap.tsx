@@ -156,6 +156,12 @@ const MiniMap = ({ currentX, currentY }: Props) => {
 
                         let emoji = '';
 
+                        const isRoad = typeof window !== 'undefined' && (window as any).roadTiles?.has(key);
+                        if (isRoad) {
+                            bgColor = '#a07d56'; // road color
+                            emoji = ''; // or '🛣️'
+                        }
+
                         if (area) {
                             bgColor = biomeColors[area.theme] || biomeColors.default;
 
