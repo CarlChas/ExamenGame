@@ -43,6 +43,7 @@ export interface BiomeSeed {
     nameSuffix: string;
     settlementName?: string;
     occupiedCoords?: Set<string>;
+    connectedToGate?: boolean;
 }
 
 // === Constants ===
@@ -300,9 +301,14 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
                         return false;
                     });
 
-                    if (!isTouchingSettlement) {
+                    const isGate = biomeSeeds.some(seed =>
+                        seed.gateCoords?.x === cx && seed.gateCoords?.y === cy
+                    );
+
+                    if (!isTouchingSettlement && !isGate) {
                         roadTiles.add(key);
                     }
+
 
                     // Move step-by-step toward the target gate
                     if (cx < targetX) cx++;
@@ -310,10 +316,6 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
                     else if (cy < targetY) cy++;
                     else if (cy > targetY) cy--;
                 }
-
-
-
-                roadTiles.add(`${targetX},${targetY}`);
             }
         }
 
@@ -340,6 +342,67 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
     }
 }
 
+function connectToNearestGate(seed: BiomeSeed) {
+    if (!seed.gateCoords) return;
+    if (seed.type === 'camp') return false; // ❌ skip camps completely
+
+    const { x: startX, y: startY } = seed.gateCoords;
+
+    const candidates = biomeSeeds.filter(s =>
+        s !== seed && s.gateCoords && s.settlementName
+    );
+
+    if (!candidates.length) return;
+
+    let closest = candidates[0];
+    let minDist = Infinity;
+
+    for (const other of candidates) {
+        const dx = other.gateCoords!.x - startX;
+        const dy = other.gateCoords!.y - startY;
+        const dist = dx * dx + dy * dy;
+        if (dist < minDist) {
+            minDist = dist;
+            closest = other;
+        }
+    }
+
+    const { x: targetX, y: targetY } = closest.gateCoords!;
+    let x = startX;
+    let y = startY;
+
+    while (x !== targetX || y !== targetY) {
+        const key = `${x},${y}`;
+
+        const isNearSettlement = biomeSeeds.some(seed => {
+            if (!seed.settlementName || !seed.occupiedCoords) return false;
+            if (seed.gateCoords?.x === x && seed.gateCoords?.y === y) return false;
+
+            // Only block roads from 4-way adjacent tiles, not diagonals
+            const directAdj = [
+                [1, 0], [-1, 0],
+                [0, 1], [0, -1],
+            ];
+            for (const [dx, dy] of directAdj) {
+                const neighborKey = `${x + dx},${y + dy}`;
+                if (seed.occupiedCoords.has(neighborKey)) return true;
+            }
+
+            return false;
+        });
+
+        if (!isNearSettlement) {
+            roadTiles.add(key);
+        }
+
+        // Walk cleanly toward target
+        if (x !== targetX) {
+            x += Math.sign(targetX - x);
+        } else if (y !== targetY) {
+            y += Math.sign(targetY - y);
+        }
+    }
+}
 
 // === API ===
 export function getMapData(): Record<string, Area> {
@@ -354,10 +417,12 @@ export function getMapData(): Record<string, Area> {
     roadTiles.forEach(coord => {
         if (!mapData.has(coord)) {
             const [x, y] = coord.split(',').map(Number);
-            getArea(x, y); // 👈 ensure road tiles exist in map
+            const maybeSeed = getSettlementBiome(x, y);
+            if (maybeSeed?.gateCoords?.x === x && maybeSeed.gateCoords?.y === y) return;
+
+            getArea(x, y);
         }
     });
-
     return obj;
 }
 
@@ -418,6 +483,11 @@ export function getArea(x: number, y: number): Area {
         : `${seed.namePrefix} ${seed.nameSuffix}`;
 
     const role: Area['role'] = isGateTile ? 'gate' : isCoreTile ? 'core' : undefined;
+    if (isGateTile && seed && !seed.connectedToGate && seed.type !== 'camp') {
+        connectToNearestGate(seed);
+        seed.connectedToGate = true;
+    }
+
     if (role === 'gate') {
         console.log('🚪 This tile is a GATE:', key, 'Name:', name);
     }
