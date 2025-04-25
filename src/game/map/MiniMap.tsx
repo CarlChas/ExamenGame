@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { getMapData, getRoadTiles } from './map';
+import { getMapData /*, getRoadTiles*/ } from './map';
 
-const roads = getRoadTiles(); // Set<string>
+// const roads = getRoadTiles(); // Set<string>
 
 interface Props {
     currentX: number;
@@ -127,37 +127,21 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                         const area = map[key];
                         const isCurrent = x === currentX && y === currentY;
 
-                        const isRoad = roads.has(key);
+                        // const isRoad = roads.has(key);
                         const isGate = area?.role === 'gate';
                         const isPlayer = isCurrent;
 
-                        // Choose default background color first
                         let bgColor = typeColors[area?.type ?? area?.theme] || typeColors.default;
                         let emoji = '❓';
 
-                        // 🧍 Priority 1: Player
                         if (isPlayer) {
                             emoji = '🧍';
-                        }
-                        // 🚪 Priority 2: Gate (if not player)
-                        else if (isGate) {
+                        } else if (isGate) {
                             emoji = '🚪';
-                            bgColor = '#c49e6c'; // Optional: gold-ish gate color
-                        }
-                        // 🛣️ Priority 3: Road (if not gate or player)
-                        else if (isRoad) {
-                            const isNearCity = coords.some(({ x: nx, y: ny }) => {
-                                const n = map[`${nx},${ny}`];
-                                return n?.role === 'gate' && ['city', 'town'].includes(n.type ?? '');
-                            });
-                            emoji = isNearCity ? '🛣️' : '🛤️';
-                            bgColor = isNearCity ? '#a07d56' : '#866a51';
-                        }
-                        // 🏘️ Priority 4: Normal area
-                        else {
+                            bgColor = '#c49e6c';
+                        } else {
                             emoji = getAreaEmoji(area?.type);
                         }
-
 
                         return (
                             <div
@@ -174,9 +158,8 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     boxSizing: 'border-box',
-                                    zIndex: isPlayer ? 3 : isGate ? 2 : isRoad ? 1 : 0,
+                                    zIndex: isPlayer ? 3 : isGate ? 2 : 0,
                                 }}
-
                                 title={area ? `${area.name} (${area.theme})` : 'Unknown'}
                             >
                                 {emoji}
@@ -197,7 +180,6 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                             backgroundColor: 'red',
                             ...pos
                         });
-
 
                         if (area.blocked.north && !drawnWalls.has(wallKey('north'))) {
                             drawnWalls.add(wallKey('north'));
