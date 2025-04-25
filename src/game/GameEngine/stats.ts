@@ -1,4 +1,4 @@
-import { Character } from '../game/types/characterTypes';
+import { Character } from '../types/characterTypes';
 
 export const calculateMaxHp = (char: Character) =>
   char.endurance * 10 + char.strength * 2 + char.level * 5;

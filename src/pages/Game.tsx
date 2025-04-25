@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CharacterList from '../components/CharacterList';
-import GameEngine from '../game/GameEngine';
+import GameEngine from '../game/GameEngine/GameEngine';
 import CharacterCreator from '../components/CharacterCreator';
 
 const Game = () => {
