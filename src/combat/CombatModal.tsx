@@ -9,9 +9,10 @@ interface Props {
     onVictory: (xpGained: number) => void;
     onDefeat: () => void;
     onClose: () => void;
+    handleLoad: () => void;
 }
 
-const CombatModal = ({ player, enemy, onVictory, onDefeat, onClose }: Props) => {
+const CombatModal = ({ player, enemy, onVictory, onDefeat, onClose, handleLoad }: Props) => {
     const [enemyState, setEnemyState] = useState(enemy);
     const [playerHp, setPlayerHp] = useState(player.currentHp);
     const [turnLog, setTurnLog] = useState<string[]>([]);
@@ -40,7 +41,10 @@ const CombatModal = ({ player, enemy, onVictory, onDefeat, onClose }: Props) => 
         } else if (newPlayerHp <= 0) {
             setCombatEnded(true);
             setTurnLog(prev => [...prev, `You have been defeated...`]);
-            setTimeout(() => onDefeat(), 1500);
+            setTimeout(() => {
+                onDefeat();
+                handleLoad();
+            }, 1500);
         }
     };
 

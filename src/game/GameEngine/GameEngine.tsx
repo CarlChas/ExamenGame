@@ -177,10 +177,11 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           }));
           setDialog(`${enemyInCombat.name} defeated!`);
         }}
-        onDefeat={() => {
+        onDefeat={async () => {
           setInCombat(false);
           setEnemyInCombat(null);
-          setDialog('You were defeated... but you live to fight another day.');
+          setDialog('You were defeated, child of time... The gears of time turns in reverse...');
+          await handleLoad();
         }}
       />
     );
