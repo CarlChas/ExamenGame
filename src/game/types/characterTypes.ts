@@ -1,4 +1,5 @@
 export interface Character {
+  calculateMaxHp: number;
   id: number;
   name: string;
   color: string;
@@ -15,6 +16,8 @@ export interface Character {
   xp: number;
   currentHp: number;
   currentMp: number;
+  maxHp: number;
+  maxMp: number;
 
   // New fields (for gameplay progress)
   pos?: { x: number; y: number };

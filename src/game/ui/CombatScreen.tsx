@@ -3,6 +3,8 @@ import { Character } from '../types/characterTypes';
 import { Enemy } from '../../combat/enemies';
 import StatPanel from '../ui/StatPanel';
 import EnemyPanel from '../ui/EnemyPanel';
+import { calculateMaxHp, calculateMaxMp } from '../GameEngine/stats';
+
 
 interface Props {
     player: Character;
@@ -83,9 +85,9 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
                     <h3>{player.name}</h3>
                     <StatPanel
                         currentHp={playerHp}
-                        maxHp={player.currentHp}
+                        maxHp={calculateMaxHp(player)}
                         currentMp={player.currentMp}
-                        maxMp={player.currentMp}
+                        maxMp={calculateMaxMp(player)}
                         level={player.level}
                         xp={player.xp}
                         nextLevelXp={player.level * 100}
