@@ -1,4 +1,4 @@
-import { weaponTypes, armorPieces, consumables, prefixList, suffixList, materials } from './lootData';
+import { weaponTypes, armorPieces, consumables, miscItems, prefixList, suffixList, materials } from './lootData';
 import { LootItem, Rarity, Type } from './lootTypes';
 
 function getRandom<T>(list: readonly T[]): T {
@@ -28,7 +28,6 @@ export function generateRandomLoot(): LootItem {
     } else if (type === 'consumable') {
         baseName = `${prefix ? prefix + ' ' : ''}${getRandom(consumables)}${suffix ? ' ' + suffix : ''}`;
     } else {
-        const miscItems = ['Ancient Coin', 'Old Map', 'Mystery Box', 'Gemstone'];
         baseName = `${prefix ? prefix + ' ' : ''}${getRandom(miscItems)}${suffix ? ' ' + suffix : ''}`;
     }
 

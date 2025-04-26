@@ -8,6 +8,8 @@ export const armorPieces = ['Helmet', 'Chestplate', 'Leggings', 'Boots', 'Gauntl
 
 export const consumables = ['Health Potion', 'Mana Potion', 'Elixir', 'Antidote'];
 
+export const miscItems = ['Ancient Coin', 'Old Map', 'Mystery Box', 'Gemstone'];
+
 export const prefixList = [
     'Ancient',
     'Cursed',
