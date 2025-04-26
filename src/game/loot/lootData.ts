@@ -2,7 +2,11 @@ import { Rarity } from './lootTypes';
 
 export const materials = ['Wooden', 'Copper', 'Iron', 'Steel', 'Obsidian', 'Magisteel', 'Dragonbone', 'Adamantium', 'Mythril'];
 
-export const itemTypes = ['Sword', 'Axe', 'Dagger', 'Bow', 'Staff', 'Wand', 'Greataxe', 'Greatsword', 'Rapier', 'Shield'];
+export const weaponTypes = ['Sword', 'Axe', 'Dagger', 'Bow', 'Staff', 'Wand', 'Greataxe', 'Greatsword', 'Rapier', 'Shield'];
+
+export const armorPieces = ['Helmet', 'Chestplate', 'Leggings', 'Boots', 'Gauntlets', 'Shield'];
+
+export const consumables = ['Health Potion', 'Mana Potion', 'Elixir', 'Antidote'];
 
 export const prefixList = [
     'Ancient',
