@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Character } from '../game/types/characterTypes';
-import { calculateMaxHp, calculateMaxMp } from '../game/GameEngine/stats'; // ✅ Correct import!
+import { calculateMaxHp, calculateMaxMp } from '../game/GameEngine/stats';
+import ProgressBar from '../components/ProgressBars';
 
 const CharacterPage = () => {
     const [characters, setCharacters] = useState<Character[]>([]);
@@ -73,9 +74,19 @@ const CharacterPage = () => {
                     >
                         <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>{char.name}</h3>
                         <p><strong>Level:</strong> {char.level}</p>
-                        <p><strong>HP:</strong> {char.currentHp} / {char.maxHp}</p>
-                        <p><strong>MP:</strong> {char.currentMp} / {char.maxMp}</p>
-                        <p><strong>XP:</strong> {char.xp}</p>
+                        {/* Health & Mana */}
+                        <div style={{
+                            marginTop: '2rem',
+                            background: '#333',
+                            padding: '1rem',
+                            borderRadius: '8px',
+                            textAlign: 'center'
+                        }}>
+                            <h3>❤️ Health & Mana</h3>
+                            <ProgressBar current={char.currentHp} max={char.maxHp} color="#e74c3c" label="HP" />
+                            <ProgressBar current={char.currentMp} max={char.maxMp} color="#3498db" label="MP" />
+                            <ProgressBar current={char.xp} max={char.level * 100} color="#f1c40f" label="XP" />
+                        </div>
                     </Link>
                 ))}
             </div>

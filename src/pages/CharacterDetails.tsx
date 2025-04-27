@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Character } from '../game/types/characterTypes';
 import { LootItem } from '../game/loot/lootTypes';
 import { calculateMaxHp, calculateMaxMp } from '../game/GameEngine/stats';
+import ProgressBar from '../components/ProgressBars';
 
 const rarityColors: Record<string, string> = {
     common: '#aaa',
@@ -120,7 +121,7 @@ const CharacterDetailPage = () => {
                 </div>
             </div>
 
-            {/* Health & Mana */}
+            {/* Health, Mana, XP Bars */}
             <div style={{
                 marginTop: '2rem',
                 background: '#333',
@@ -129,9 +130,9 @@ const CharacterDetailPage = () => {
                 textAlign: 'center'
             }}>
                 <h3>❤️ Health & Mana</h3>
-                <p><strong>HP:</strong> {character.currentHp} / {character.maxHp}</p>
-                <p><strong>MP:</strong> {character.currentMp} / {character.maxMp}</p>
-                <p><strong>XP:</strong> {character.xp}</p>
+                <ProgressBar current={character.currentHp} max={character.maxHp} color="#e74c3c" label="HP" />
+                <ProgressBar current={character.currentMp} max={character.maxMp} color="#3498db" label="MP" />
+                <ProgressBar current={character.xp} max={character.level * 100} color="#f1c40f" label="XP" />
             </div>
 
             {/* Item modal */}
