@@ -91,7 +91,8 @@ const CharacterDetailPage = () => {
                     justifyContent: 'center',
                     fontSize: '0.9rem',
                     fontWeight: 'bold',
-                    color: 'white'
+                    color: 'white',
+                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)',
                 }}>
                     {current}/{max}
                 </div>
