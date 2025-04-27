@@ -1,5 +1,6 @@
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
+// lootTypes.ts
 
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export type Type = 'weapon' | 'armor' | 'consumable' | 'misc';
 
 export interface LootItem {
@@ -9,4 +10,11 @@ export interface LootItem {
     type: Type;
     material: string;
     value: number;
+    bonusStats?: BonusStat[];
+}
+
+export interface BonusStat {
+    stat: string;
+    flat?: number;
+    percent?: number;
 }

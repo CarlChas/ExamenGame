@@ -1,5 +1,6 @@
+import { LootItem } from '../loot/lootTypes';
+
 export interface Character {
-  calculateMaxHp: number;
   id: number;
   name: string;
   color: string;
@@ -19,8 +20,23 @@ export interface Character {
   maxHp: number;
   maxMp: number;
 
-  // New fields (for gameplay progress)
+  equipment: {
+    weapon1?: LootItem;
+    weapon2?: LootItem;
+    armor: {
+      helmet?: LootItem;
+      chest?: LootItem;
+      back?: LootItem;
+      legs?: LootItem;
+      boots?: LootItem;
+    };
+    necklace?: LootItem;
+    belt?: LootItem;
+    ring1?: LootItem;
+    ring2?: LootItem;
+  };
+
   pos?: { x: number; y: number };
   map?: any;
-  inventory?: any[];
+  inventory?: LootItem[];
 }
