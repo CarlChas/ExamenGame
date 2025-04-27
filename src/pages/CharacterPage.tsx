@@ -1,56 +1,86 @@
-import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-
-interface CharacterSummary {
-  id: number;
-  name: string;
-  level: number;
-  currentHp: number;
-  currentMp: number;
-}
+import { Link } from 'react-router-dom';
+import { Character } from '../game/types/characterTypes';
+import { calculateMaxHp, calculateMaxMp } from '../game/GameEngine/stats'; // ✅ Correct import!
 
 const CharacterPage = () => {
-  const [characters, setCharacters] = useState<CharacterSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+    const [characters, setCharacters] = useState<Character[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchCharacters = async () => {
-      const username = localStorage.getItem('currentUser');
-      if (!username) return;
+    useEffect(() => {
+        const fetchCharacters = async () => {
+            const username = localStorage.getItem('currentUser');
+            if (!username) return;
 
-      try {
-        const response = await fetch(`http://localhost:3001/api/users/load/${username}`);
-        const data = await response.json();
-        setCharacters(data);
-      } catch (error) {
-        console.error('Failed to load characters', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+            try {
+                const res = await fetch(`http://localhost:3001/api/users/load/${username}`);
+                const data = await res.json();
 
-    fetchCharacters();
-  }, []);
+                const updated = data.map((char: Character) => ({
+                    ...char,
+                    maxHp: calculateMaxHp(char),
+                    maxMp: calculateMaxMp(char),
+                }));
 
-  if (loading) return <p>Loading characters...</p>;
+                setCharacters(updated);
+            } catch (error) {
+                console.error('Error loading characters:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  return (
-    <div style={{ color: 'white' }}>
-      <h2>Your Characters</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        {characters.map(char => (
-          <Link to={`/character/${char.id}`} key={char.id} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ background: '#222', padding: '1rem', borderRadius: '8px' }}>
-              <h3>{char.name}</h3>
-              <p>Level: {char.level}</p>
-              <p>HP: {char.currentHp}</p>
-              <p>MP: {char.currentMp}</p>
+        fetchCharacters();
+    }, []);
+
+    if (loading) {
+        return <div style={{ color: 'white', textAlign: 'center' }}>Loading characters...</div>;
+    }
+
+    if (characters.length === 0) {
+        return <div style={{ color: 'white', textAlign: 'center' }}>No characters found.</div>;
+    }
+
+    return (
+        <div style={{
+            maxWidth: '900px',
+            margin: '2rem auto',
+            padding: '2rem',
+            background: '#1a1a1a',
+            color: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 0 10px #000',
+            fontFamily: 'sans-serif'
+        }}>
+            <h1 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>🧙‍♂️ Your Characters</h1>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                {characters.map((char) => (
+                    <Link
+                        key={char.id}
+                        to={`/character/${char.id}`}
+                        style={{
+                            background: '#2c2c2c',
+                            padding: '1rem',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            color: 'white',
+                            boxShadow: '0 0 5px #000',
+                            transition: 'transform 0.2s',
+                        }}
+                        onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
+                        onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                    >
+                        <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>{char.name}</h3>
+                        <p><strong>Level:</strong> {char.level}</p>
+                        <p><strong>HP:</strong> {char.currentHp} / {char.maxHp}</p>
+                        <p><strong>MP:</strong> {char.currentMp} / {char.maxMp}</p>
+                        <p><strong>XP:</strong> {char.xp}</p>
+                    </Link>
+                ))}
             </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
+        </div>
+    );
 };
 
 export default CharacterPage;
