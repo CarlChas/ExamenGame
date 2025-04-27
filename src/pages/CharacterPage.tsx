@@ -68,8 +68,8 @@ const CharacterPage = () => {
                             boxShadow: '0 0 5px #000',
                             transition: 'transform 0.2s',
                         }}
-                        onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
-                        onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                        onMouseOver={(e: { currentTarget: { style: { transform: string; }; }; }) => (e.currentTarget.style.transform = 'scale(1.02)')}
+                        onMouseOut={(e: { currentTarget: { style: { transform: string; }; }; }) => (e.currentTarget.style.transform = 'scale(1)')}
                     >
                         <h3 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>{char.name}</h3>
                         <p><strong>Level:</strong> {char.level}</p>
