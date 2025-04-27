@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { Character } from '../game/types/characterTypes';
 import { LootItem } from '../game/loot/lootTypes';
 import { calculateMaxHp, calculateMaxMp } from '../game/GameEngine/stats';
-import ProgressBar from '../components/ProgressBars';
 
 const rarityColors: Record<string, string> = {
     common: '#aaa',
@@ -71,6 +70,35 @@ const CharacterDetailPage = () => {
         )
     );
 
+    const renderProgressBar = (current: number, max: number, color: string) => (
+        <div style={{ margin: '6px 0' }}>
+            <div style={{ background: '#444', borderRadius: 4, position: 'relative', height: '20px', overflow: 'hidden' }}>
+                <div style={{
+                    background: color,
+                    width: `${(current / max) * 100}%`,
+                    height: '100%',
+                    borderRadius: 4,
+                    transition: 'width 0.3s ease'
+                }} />
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold',
+                    color: 'white'
+                }}>
+                    {current}/{max}
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div style={{
             maxWidth: '800px',
@@ -121,7 +149,7 @@ const CharacterDetailPage = () => {
                 </div>
             </div>
 
-            {/* Health, Mana, XP Bars */}
+            {/* Health, Mana, XP Bars styled like StatPanel */}
             <div style={{
                 marginTop: '2rem',
                 background: '#333',
@@ -130,9 +158,14 @@ const CharacterDetailPage = () => {
                 textAlign: 'center'
             }}>
                 <h3>❤️ Health & Mana</h3>
-                <ProgressBar current={character.currentHp} max={character.maxHp} color="#e74c3c" label="HP" />
-                <ProgressBar current={character.currentMp} max={character.maxMp} color="#3498db" label="MP" />
-                <ProgressBar current={character.xp} max={character.level * 100} color="#f1c40f" label="XP" />
+                <label>❤️ HP:</label>
+                {renderProgressBar(character.currentHp, character.maxHp, '#e63946')}
+
+                <label>🔮 MP:</label>
+                {renderProgressBar(character.currentMp, character.maxMp, '#3a86ff')}
+
+                <label>⭐ XP:</label>
+                {renderProgressBar(character.xp, character.level * 100, '#ffd166')}
             </div>
 
             {/* Item modal */}
