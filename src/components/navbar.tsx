@@ -7,6 +7,7 @@ const Navbar = () => {
         <li><Link to="/" style={{ color: '#fff', textDecoration: 'none' }}>🏠 Home</Link></li>
         <li><Link to="/game" style={{ color: '#fff', textDecoration: 'none' }}>🎮 Play</Link></li>
         <li><Link to="/about" style={{ color: '#fff', textDecoration: 'none' }}>ℹ️ About</Link></li>
+        <li><Link to="/characters" style={{ color: '#fff', textDecoration: 'none' }}>ℹ️Characters</Link></li>
       </ul>
     </nav>
   );
