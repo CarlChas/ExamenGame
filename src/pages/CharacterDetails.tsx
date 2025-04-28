@@ -169,7 +169,6 @@ const CharacterDetailPage = () => {
                 {renderProgressBar(character.xp, character.level * 100, '#ffd166')}
             </div>
 
-            {/* Item modal */}
             {selectedItem && (
                 <div style={{
                     position: 'fixed',
@@ -194,6 +193,21 @@ const CharacterDetailPage = () => {
                         <p><strong>Material:</strong> {selectedItem.material}</p>
                         <p><strong>Value:</strong> {selectedItem.value}g</p>
 
+                        {/* Bonus Stats */}
+                        {selectedItem.bonusStats && selectedItem.bonusStats.length > 0 && (
+                            <div style={{ marginTop: '1rem' }}>
+                                <h4>📈 Bonuses:</h4>
+                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    {selectedItem.bonusStats.map((bonus, idx) => (
+                                        <li key={idx} style={{ fontSize: '0.85rem' }}>
+                                            {bonus.flat && `+${bonus.flat} ${bonus.stat}`}
+                                            {bonus.percent && `+${bonus.percent}% ${bonus.stat}`}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         <button
                             onClick={() => setSelectedItem(null)}
                             style={{ marginTop: '1rem' }}
@@ -203,6 +217,7 @@ const CharacterDetailPage = () => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };
