@@ -2,7 +2,7 @@
 
 import { Enemy } from '../../combat/enemies';
 import { getRandomEnemyForBiomeAndTheme } from '../../combat/enemies';
-import { generateSpecificNPCForLandmark, NPC } from '../npcs/npcGenerator';
+import { generateSpecificNPC, NPC } from '../npcs/npcGenerator';
 
 // === Types ===
 export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'city' | 'village' | 'camp';
@@ -465,7 +465,7 @@ export function getArea(x: number, y: number): Area {
         const landmarkTypes = getLandmarkTypesFor(type);
         landmarks = landmarkTypes.map(landmarkType => {
             const pos = generateSafePosition(positions);
-            const npc = generateSpecificNPCForLandmark(landmarkType, pos.x, pos.y);
+            const npc = generateSpecificNPC(landmarkType, pos.x, pos.y);
             npcs.push(npc);
             return {
                 type: landmarkType,
