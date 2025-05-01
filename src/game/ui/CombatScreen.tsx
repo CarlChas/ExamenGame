@@ -11,8 +11,8 @@ import { calculateMaxHp, calculateMaxMp } from '../GameEngine/stats';
 interface Props {
     player: Character;
     enemy: Enemy;
-    // Modify onVictory to accept xp
-    onVictory: (xpGained: number) => void;
+    // Modify onVictory to accept xp and final player HP
+    onVictory: (xpGained: number, finalPlayerHp: number) => void;
     onDefeat: () => void;
 }
 
@@ -33,8 +33,8 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
 
         if (newHp <= 0) {
             appendLog(`${enemy.name} was defeated!`);
-            // Pass enemy.xp to onVictory
-            setTimeout(() => onVictory(enemy.xp), 1000);
+            // Pass enemy.xp AND final playerHp to onVictory
+            setTimeout(() => onVictory(enemy.xp, playerHp), 1000);
         } else {
             setTurn('enemy');
         }
@@ -64,7 +64,15 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
             const timeout = setTimeout(handleEnemyTurn, 1000);
             return () => clearTimeout(timeout);
         }
-    }, [turn]);
+    }, [turn, playerHp, enemyHp]); // Added playerHp, enemyHp to dependencies
+
+
+    // Effect to update internal playerHp if player.currentHp changes externally
+    // This is important if healing happens outside of combat while CombatScreen is mounted
+    useEffect(() => {
+        setPlayerHp(player.currentHp);
+    }, [player.currentHp]);
+
 
     return (
         <div style={{
@@ -88,9 +96,9 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
                 <div style={{ flex: 1 }}>
                     <h3>{player.name}</h3>
                     <StatPanel
-                        currentHp={playerHp}
+                        currentHp={playerHp} // Use internal playerHp for display during combat
                         maxHp={calculateMaxHp(player)}
-                        currentMp={player.currentMp}
+                        currentMp={player.currentMp} // MP is not currently dynamic in combat
                         maxMp={calculateMaxMp(player)}
                         level={player.level}
                         xp={player.xp}

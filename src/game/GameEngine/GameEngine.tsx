@@ -70,7 +70,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           strength: prev.strength + 1,
           dexterity: prev.dexterity + 1,
           intelligence: prev.intelligence + 1,
-          endurance: prev.endurance + 1,
+          endurance: prev.endurance + 1, // Changed from vitality back to endurance based on original code
           luck: prev.luck + 1,
           // Heal to full on level up
           currentHp: calculateMaxHp({ ...prev, level: newLevel }),
@@ -120,8 +120,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       pos: currentPos,
       map: getMapData(),
       inventory,
-      currentHp: player.currentHp,
-      currentMp: player.currentMp,
+      currentHp: player.currentHp, // Save current HP
+      currentMp: player.currentMp, // Save current MP
       xp: player.xp, // Save XP
       level: player.level, // Save Level
     };
@@ -164,7 +164,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           strength: updatedChar.strength ?? prev.strength,
           dexterity: updatedChar.dexterity ?? prev.dexterity,
           intelligence: updatedChar.intelligence ?? prev.intelligence,
-          endurance: updatedChar.endurance ?? prev.endurance,
+          endurance: updatedChar.endurance ?? prev.endurance, // Changed from vitality back to endurance
           luck: updatedChar.luck ?? prev.luck,
         }));
 
@@ -194,8 +194,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
-  // Modify onVictory to accept xpGained
-  const handleCombatVictory = (xpGained: number) => {
+  // Modify onVictory to accept xpGained and finalPlayerHp
+  const handleCombatVictory = (xpGained: number, finalPlayerHp: number) => {
     setInCombat(false);
     setEnemyInCombat(null);
     setArea(prev => ({
@@ -204,10 +204,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }));
     setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
 
-    // Add XP to player state
+    // Add XP and update player HP state
     setPlayer(prev => ({
       ...prev,
       xp: prev.xp + xpGained,
+      currentHp: finalPlayerHp, // Update HP with the value from combat
+      // currentMp is not currently affected by combat, so no update needed here
     }));
   };
 
@@ -253,7 +255,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           setInCombat(false);
           setEnemyInCombat(null);
           setDialog('You were defeated, child of time... The gears of time turns in reverse...');
-          await handleLoad();
+          await handleLoad(); // Load last saved state on defeat
         }}
       />
     );
@@ -261,7 +263,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
+      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}\
       <CharacterStats character={player} />
 
       <div>
