@@ -1,3 +1,5 @@
+// src/game/ui/CombatScreen.tsx
+
 import { useEffect, useState } from 'react';
 import { Character } from '../types/characterTypes';
 import { Enemy } from '../../combat/enemies';
@@ -9,7 +11,8 @@ import { calculateMaxHp, calculateMaxMp } from '../GameEngine/stats';
 interface Props {
     player: Character;
     enemy: Enemy;
-    onVictory: () => void;
+    // Modify onVictory to accept xp
+    onVictory: (xpGained: number) => void;
     onDefeat: () => void;
 }
 
@@ -30,7 +33,8 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
 
         if (newHp <= 0) {
             appendLog(`${enemy.name} was defeated!`);
-            setTimeout(onVictory, 1000);
+            // Pass enemy.xp to onVictory
+            setTimeout(() => onVictory(enemy.xp), 1000);
         } else {
             setTurn('enemy');
         }

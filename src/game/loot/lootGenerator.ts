@@ -16,7 +16,7 @@ function getRandomRarity(): Rarity {
 }
 
 const types: Type[] = ['weapon', 'armor', 'consumable', 'misc'];
-const possibleStats = ['Strength', 'Dexterity', 'Intelligence', 'Vitality', 'Luck'];
+const possibleStats = ['Strength', 'Dexterity', 'Intelligence', 'Endurance', 'Luck'];
 
 function generateBonusStats(rarity: Rarity): BonusStat[] {
     if (rarity === 'common') return [];

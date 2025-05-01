@@ -1,3 +1,5 @@
+// src/game/GameEngine/GameEngine.tsx
+
 import { useEffect, useState } from 'react';
 import { getArea, Area, getMapData, setMapData } from '../map/map';
 import Inventory from '../inventory/Inventory';
@@ -40,6 +42,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     };
   });
 
+  // Recalculate maxHp, maxMp, and nextLevelXp whenever player stats/level change
   const maxHp = calculateMaxHp(player);
   const maxMp = calculateMaxMp(player);
   const nextLevelXp = calculateNextLevelXp(player.level);
@@ -48,6 +51,40 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     setArea(getArea(currentPos.x, currentPos.y));
     if (character.map) setMapData(character.map);
   }, [character, currentPos]);
+
+  // Effect to handle level up when XP changes
+  useEffect(() => {
+    const checkLevelUp = () => {
+      const requiredXp = calculateNextLevelXp(player.level);
+      if (player.xp >= requiredXp) {
+        // Level up!
+        const newLevel = player.level + 1;
+        const remainingXp = player.xp - requiredXp;
+
+        // You might want to add stat increases here based on level up
+        setPlayer(prev => ({
+          ...prev,
+          level: newLevel,
+          xp: remainingXp, // Carry over excess XP
+          // Example stat increase (adjust as needed)
+          strength: prev.strength + 1,
+          dexterity: prev.dexterity + 1,
+          intelligence: prev.intelligence + 1,
+          endurance: prev.endurance + 1,
+          luck: prev.luck + 1,
+          // Heal to full on level up
+          currentHp: calculateMaxHp({ ...prev, level: newLevel }),
+          currentMp: calculateMaxMp({ ...prev, level: newLevel }),
+        }));
+        setDialog(`Congratulations! You reached Level ${newLevel}!`);
+        // Recursively check for multiple level ups if enough XP was gained
+        checkLevelUp();
+      }
+    };
+
+    checkLevelUp();
+  }, [player.xp, player.level]); // Re-run this effect when player.xp or player.level changes
+
 
   const move = (dir: DirectionKey) => {
     const { x, y } = currentPos;
@@ -85,6 +122,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       inventory,
       currentHp: player.currentHp,
       currentMp: player.currentMp,
+      xp: player.xp, // Save XP
+      level: player.level, // Save Level
     };
 
     await fetch('http://localhost:3001/api/users/save-progress', {
@@ -121,6 +160,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           currentMp: updatedChar.currentMp ?? prev.currentMp,
           xp: updatedChar.xp ?? prev.xp,
           level: updatedChar.level ?? prev.level,
+          // Ensure other stats are loaded if they are part of the saved data
+          strength: updatedChar.strength ?? prev.strength,
+          dexterity: updatedChar.dexterity ?? prev.dexterity,
+          intelligence: updatedChar.intelligence ?? prev.intelligence,
+          endurance: updatedChar.endurance ?? prev.endurance,
+          luck: updatedChar.luck ?? prev.luck,
         }));
 
         setDialog('Progress loaded!');
@@ -147,6 +192,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     } else {
       setDialog(`${npcName} says you look healthy already.`);
     }
+  };
+
+  // Modify onVictory to accept xpGained
+  const handleCombatVictory = (xpGained: number) => {
+    setInCombat(false);
+    setEnemyInCombat(null);
+    setArea(prev => ({
+      ...prev,
+      enemies: prev.enemies?.filter(e => e !== enemyInCombat)
+    }));
+    setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
+
+    // Add XP to player state
+    setPlayer(prev => ({
+      ...prev,
+      xp: prev.xp + xpGained,
+    }));
   };
 
 
@@ -185,15 +247,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       <CombatScreen
         player={player}
         enemy={enemyInCombat}
-        onVictory={() => {
-          setInCombat(false);
-          setEnemyInCombat(null);
-          setArea(prev => ({
-            ...prev,
-            enemies: prev.enemies?.filter(e => e !== enemyInCombat)
-          }));
-          setDialog(`${enemyInCombat.name} defeated!`);
-        }}
+        // Pass the new handleCombatVictory function
+        onVictory={handleCombatVictory}
         onDefeat={async () => {
           setInCombat(false);
           setEnemyInCombat(null);
@@ -206,7 +261,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}\
+      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
       <CharacterStats character={player} />
 
       <div>
@@ -217,7 +272,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           setDialog={setDialog}
           setInCombat={setInCombat}
           setEnemyInCombat={setEnemyInCombat}
-          onHealPlayer={handleHealPlayer} // Pass the updated function here
+          onHealPlayer={handleHealPlayer}
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1rem' }}>

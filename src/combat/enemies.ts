@@ -1,5 +1,3 @@
-// src/game/combat/enemies.ts
-
 export interface EnemyMove {
     name: string;
     damageMultiplier: number;
