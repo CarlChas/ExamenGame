@@ -119,6 +119,7 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
             {turn === 'player' && (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' }}>
                     <button onClick={handlePlayerAttack}>🗡 Attack</button>
+                    <button disabled>📀 Skills</button>
                     <button disabled>🛡 Defend</button>
                     <button disabled>🧪 Use Item</button>
                     <button disabled>🏃‍♂️ Flee</button>
