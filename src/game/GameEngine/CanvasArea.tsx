@@ -8,6 +8,7 @@ interface Props {
   setDialog: Dispatch<SetStateAction<string | null>>;
   setInCombat: Dispatch<SetStateAction<boolean>>;
   setEnemyInCombat: Dispatch<SetStateAction<any>>;
+  onHealPlayer: (npcName: string) => void; // Update prop type
 }
 
 const CanvasArea = ({
@@ -15,6 +16,7 @@ const CanvasArea = ({
   setDialog,
   setInCombat,
   setEnemyInCombat,
+  onHealPlayer,
 }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const enemyImages = useRef<Record<string, HTMLImageElement>>({});
@@ -112,7 +114,12 @@ const CanvasArea = ({
         const dy = y - npc.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < npc.radius) {
-          setDialog(npc.dialog);
+          // Check if the NPC is an Inn or Tavern
+          if (npc.type === 'inn' || npc.type === 'tavern') {
+            onHealPlayer(npc.name);
+          } else {
+             setDialog(npc.dialog); // Set default dialog for other NPCs
+          }
           return;
         }
       }
@@ -120,7 +127,7 @@ const CanvasArea = ({
       for (let enemy of area.enemies ?? []) {
         const dx = x - (enemy.x ?? 0);
         const dy = y - (enemy.y ?? 0);
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Math.sqrt(dx * dx + dy + dy);
         if (dist < 20) {
           setEnemyInCombat(enemy);
           setInCombat(true);
@@ -159,7 +166,7 @@ const CanvasArea = ({
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [area]);
+  }, [area, onHealPlayer]); // onHealPlayer is now stable, but keep in dependency array
 
   return (
     <canvas

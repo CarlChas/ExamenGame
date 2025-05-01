@@ -133,6 +133,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
+  // New function to handle player healing
+  const handleHealPlayer = (npcName: string) => {
+    const needsHealing = player.currentHp < maxHp || player.currentMp < maxMp;
+
+    if (needsHealing) {
+      setPlayer(prev => ({
+        ...prev,
+        currentHp: maxHp, // Heal to max HP
+        currentMp: maxMp, // Heal to max MP
+      }));
+      setDialog(`${npcName} heals you completely!`);
+    } else {
+      setDialog(`${npcName} says you look healthy already.`);
+    }
+  };
+
+
   const renderMoveButton = (dir: DirectionKey, label: string) => {
     const directionOffsets = {
       north: { x: 0, y: -1, exit: 'north', entry: 'south' },
@@ -189,7 +206,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
+      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}\
       <CharacterStats character={player} />
 
       <div>
@@ -200,6 +217,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           setDialog={setDialog}
           setInCombat={setInCombat}
           setEnemyInCombat={setEnemyInCombat}
+          onHealPlayer={handleHealPlayer} // Pass the updated function here
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1rem' }}>
