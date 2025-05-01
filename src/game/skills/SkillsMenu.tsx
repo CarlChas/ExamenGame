@@ -11,16 +11,16 @@ interface Props {
     // Function to call to close the menu
     onClose: () => void;
     // Optional: Player's current MP to show costs or disable skills
-    // currentMp?: number;
+    currentMp?: number;
 }
 
-const SkillsMenu: React.FC<Props> = ({ availableSkills, onSkillSelect, onClose /*, currentMp */ }) => {
+const SkillsMenu: React.FC<Props> = ({ availableSkills, onSkillSelect, onClose, currentMp }) => {
 
     // Optional: Function to check if a skill is usable (e.g., enough mana)
-    // const isSkillUsable = (skill: Skill): boolean => {
-    //     if (currentMp === undefined) return true; // Assume usable if MP not tracked here
-    //     return currentMp >= skill.manaCost;
-    // };
+    const isSkillUsable = (skill: Skill): boolean => {
+        if (currentMp === undefined) return true; // Assume usable if MP not tracked here
+        return currentMp >= skill.manaCost;
+    };
 
     return (
         <div style={{
@@ -54,14 +54,14 @@ const SkillsMenu: React.FC<Props> = ({ availableSkills, onSkillSelect, onClose /
                         key={skill.id}
                         onClick={() => {
                             // Optional: Add check here if skill is usable
-                            // if (isSkillUsable(skill)) {
+                            if (isSkillUsable(skill)) {
                                 onSkillSelect(skill);
-                            // } else {
+                            } else {
                                 // appendLog("Not enough mana!"); // This log would need to be handled in CombatScreen
-                            // }
+                            }
                         }}
                         // Optional: Disable button if not usable
-                        // disabled={!isSkillUsable(skill)}
+                        disabled={!isSkillUsable(skill)}
                         style={{
                             padding: '10px',
                             borderRadius: '5px',
@@ -77,7 +77,7 @@ const SkillsMenu: React.FC<Props> = ({ availableSkills, onSkillSelect, onClose /
                     >
                         {skill.name}
                         {/* Optional: Display mana cost */}
-                        {/* {skill.manaCost > 0 && <div style={{ fontSize: '0.8em', color: '#bbb' }}>({skill.manaCost} MP)</div>} */}
+                        {skill.manaCost > 0 && <div style={{ fontSize: '0.8em', color: '#bbb' }}>({skill.manaCost} MP)</div>}
                     </button>
                 ))}
             </div>

@@ -6,7 +6,10 @@ import { Enemy } from '../../combat/enemies';
 import StatPanel from '../ui/StatPanel';
 import EnemyPanel from '../ui/EnemyPanel';
 import { calculateMaxHp, calculateMaxMp } from '../GameEngine/stats';
-
+import { allSkills, Skill } from '../skills/skillsData';
+import { lineageSkills } from '../skills/lineageSkillsData';
+import SkillsMenu from '../skills/SkillsMenu';
+import { useSkill } from '../GameEngine/useSkill';
 
 interface Props {
     player: Character;
@@ -22,6 +25,21 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
     const [enemyMove, setEnemyMove] = useState<string | null>(null);
     const [turn, setTurn] = useState<'player' | 'enemy'>('player');
     const [log, setLog] = useState<string[]>([]);
+
+    const handleSkillUse = (skill: Skill) => {
+        useSkill({
+            skill,
+            player,
+            enemy,
+            playerHp,
+            enemyHp,
+            appendLog,
+            setPlayerHp,
+            setEnemyHp,
+            setTurn,
+            onVictory,
+        });
+    };
 
     const appendLog = (text: string) => setLog(prev => [text, ...prev]);
 
@@ -39,6 +57,11 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
             setTurn('enemy');
         }
     };
+    const [showSkillsMenu, setShowSkillsMenu] = useState(false);
+
+    const handlePlayerSkill = () => {
+        setShowSkillsMenu(true);
+    }
 
     const handleEnemyTurn = () => {
         if (enemyHp <= 0 || playerHp <= 0) return;
@@ -119,7 +142,7 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
             {turn === 'player' && (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' }}>
                     <button onClick={handlePlayerAttack}>🗡 Attack</button>
-                    <button disabled>📀 Skills</button>
+                    <button onClick={handlePlayerSkill}>📀 Skills</button>
                     <button disabled>🛡 Defend</button>
                     <button disabled>🧪 Use Item</button>
                     <button disabled>🏃‍♂️ Flee</button>
@@ -133,6 +156,20 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
                 maxHeight: '200px',
                 overflowY: 'auto'
             }}>
+
+                {showSkillsMenu && (
+                    <SkillsMenu
+                        availableSkills={[...lineageSkills[player.lineage], ...allSkills]}
+                        onSkillSelect={(skill) => {
+                            console.log("Selected skill:", skill);
+                            handleSkillUse(skill);
+                            setShowSkillsMenu(false);
+                        }}
+                        onClose={() => setShowSkillsMenu(false)}
+                        currentMp={player.currentMp}
+                    />
+                )}
+
                 <h4>📜 Battle Log:</h4>
                 {log.length === 0 ? <p>No actions yet.</p> : log.map((entry, idx) => <p key={idx}>• {entry}</p>)}
             </div>
