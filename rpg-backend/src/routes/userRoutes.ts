@@ -109,6 +109,8 @@ router.post('/save-progress', async (req, res) => {
         inventory: progress.inventory,
         currentHp: progress.currentHp,
         currentMp: progress.currentMp,
+        xp: progress.xp,
+        level: progress.level,
       },
     });
 
