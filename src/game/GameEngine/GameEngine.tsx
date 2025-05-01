@@ -52,39 +52,28 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     if (character.map) setMapData(character.map);
   }, [character, currentPos]);
 
-  // Effect to handle level up when XP changes
   useEffect(() => {
-    const checkLevelUp = () => {
-      const requiredXp = calculateNextLevelXp(player.level);
-      if (player.xp >= requiredXp) {
-        // Level up!
-        const newLevel = player.level + 1;
-        const remainingXp = player.xp - requiredXp;
+    setPlayer(prev => {
+      let updated = { ...prev };
 
-        // You might want to add stat increases here based on level up
-        setPlayer(prev => ({
-          ...prev,
-          level: newLevel,
-          xp: remainingXp, // Carry over excess XP
-          // Example stat increase (adjust as needed)
-          strength: prev.strength + 1,
-          dexterity: prev.dexterity + 1,
-          intelligence: prev.intelligence + 1,
-          endurance: prev.endurance + 1, // Changed from vitality back to endurance based on original code
-          luck: prev.luck + 1,
-          // Heal to full on level up
-          currentHp: calculateMaxHp({ ...prev, level: newLevel }),
-          currentMp: calculateMaxMp({ ...prev, level: newLevel }),
-        }));
-        setDialog(`Congratulations! You reached Level ${newLevel}!`);
-        // Recursively check for multiple level ups if enough XP was gained
-        checkLevelUp();
+      while (updated.xp >= calculateNextLevelXp(updated.level)) {
+        updated.level += 1;
+        updated.xp -= calculateNextLevelXp(updated.level - 1); // Subtract XP for that level
+
+        // Stat growth example
+        updated.strength += 1;
+        updated.dexterity += 1;
+        updated.intelligence += 1;
+        updated.endurance += 1;
+        updated.luck += 1;
+
+        updated.currentHp = calculateMaxHp(updated);
+        updated.currentMp = calculateMaxMp(updated);
       }
-    };
 
-    checkLevelUp();
-  }, [player.xp, player.level]); // Re-run this effect when player.xp or player.level changes
-
+      return updated;
+    });
+  }, [player.xp]);
 
   const move = (dir: DirectionKey) => {
     const { x, y } = currentPos;
