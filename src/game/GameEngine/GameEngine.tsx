@@ -10,6 +10,7 @@ import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp, normalizeCharacte
 import MiniMap from '../map/MiniMap';
 import CanvasArea from './CanvasArea';
 
+
 interface Props {
   character: Character;
   onSwitchCharacter: () => void;
@@ -28,6 +29,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   const [player, setPlayer] = useState<Character | null>(null);
 
+  const hasInitializedPlayerState = useRef(false);
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -39,13 +41,15 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
 
   useEffect(() => {
-    if (player) {
+    if (player && !hasInitializedPlayerState.current) {
       setArea(getArea(player.pos?.x ?? 0, player.pos?.y ?? 0));
       if (player.map) setMapData(player.map);
       setInventory(player.inventory ?? []);
       setCurrentPos(player.pos ?? { x: 0, y: 0 });
+      hasInitializedPlayerState.current = true; // ✅ only do this once!
     }
   }, [player]);
+
 
   useEffect(() => {
     if (!player) return;
@@ -140,10 +144,11 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       const updatedChar = characters.find((c: any) => c.id === character.id);
 
       if (updatedChar) {
+        hasInitializedPlayerState.current = false; // ✅ re-trigger player sync logic
         setPlayer(normalizeCharacter(updatedChar));
         setDialog('Progress loaded!');
       } else {
-        // No save exists — use default starting character
+        hasInitializedPlayerState.current = false;
         setPlayer(normalizeCharacter(character));
         setDialog('No previous save. Starting fresh!');
       }
@@ -152,7 +157,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       alert('Error loading character data');
     }
   };
-
 
   const handleHealPlayer = (npcName: string) => {
     if (!player) return;
