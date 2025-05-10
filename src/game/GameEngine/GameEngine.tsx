@@ -6,10 +6,14 @@ import StatPanel from '../ui/StatPanel';
 import CharacterStats from '../ui/CharacterStats';
 import { Character } from '../types/characterTypes';
 import CombatScreen from '../ui/CombatScreen';
-import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp, normalizeCharacter } from './stats';
+import {
+  calculateMaxHp,
+  calculateMaxMp,
+  calculateNextLevelXp,
+  normalizeCharacter,
+} from './stats';
 import MiniMap from '../map/MiniMap';
 import CanvasArea from './CanvasArea';
-
 
 interface Props {
   character: Character;
@@ -29,8 +33,9 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   const [player, setPlayer] = useState<Character | null>(null);
 
-  const hasInitializedPlayerState = useRef(false);
   const hasLoadedRef = useRef(false);
+  const hasInitializedPlayerState = useRef(false);
+  const justLoadedRef = useRef(false);
 
   useEffect(() => {
     if (!hasLoadedRef.current) {
@@ -39,22 +44,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   }, []);
 
-
   useEffect(() => {
     if (player && !hasInitializedPlayerState.current) {
       setArea(getArea(player.pos?.x ?? 0, player.pos?.y ?? 0));
       if (player.map) setMapData(player.map);
       setInventory(player.inventory ?? []);
       setCurrentPos(player.pos ?? { x: 0, y: 0 });
-      hasInitializedPlayerState.current = true; // ✅ only do this once!
+      hasInitializedPlayerState.current = true;
     }
   }, [player]);
 
-
   useEffect(() => {
-    if (!player) return;
+    if (!player || justLoadedRef.current) {
+      justLoadedRef.current = false;
+      return;
+    }
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       if (!prev) return null;
 
       let updated = { ...prev };
@@ -140,15 +146,15 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     try {
       const res = await fetch(`http://localhost:3001/api/users/load/${username}`);
       const characters = await res.json();
-
       const updatedChar = characters.find((c: any) => c.id === character.id);
 
+      hasInitializedPlayerState.current = false;
+      justLoadedRef.current = true;
+
       if (updatedChar) {
-        hasInitializedPlayerState.current = false; // ✅ re-trigger player sync logic
         setPlayer(normalizeCharacter(updatedChar));
         setDialog('Progress loaded!');
       } else {
-        hasInitializedPlayerState.current = false;
         setPlayer(normalizeCharacter(character));
         setDialog('No previous save. Starting fresh!');
       }
@@ -163,11 +169,9 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
     const needsHealing = player.currentHp < maxHp || player.currentMp < maxMp;
     if (needsHealing) {
-      setPlayer(prev => prev && normalizeCharacter({
-        ...prev,
-        currentHp: maxHp,
-        currentMp: maxMp,
-      }));
+      setPlayer((prev) =>
+        prev && normalizeCharacter({ ...prev, currentHp: maxHp, currentMp: maxMp })
+      );
       setDialog(`${npcName} heals you completely!`);
     } else {
       setDialog(`${npcName} says you look healthy already.`);
@@ -179,16 +183,14 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
     setInCombat(false);
     setEnemyInCombat(null);
-    setArea(prev => ({
+    setArea((prev) => ({
       ...prev,
-      enemies: prev.enemies?.filter(e => e !== enemyInCombat)
+      enemies: prev.enemies?.filter((e) => e !== enemyInCombat),
     }));
     setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
-    setPlayer(prev => prev && normalizeCharacter({
-      ...prev,
-      xp: prev.xp + xpGained,
-      currentHp: finalPlayerHp,
-    }));
+    setPlayer((prev) =>
+      prev && normalizeCharacter({ ...prev, xp: prev.xp + xpGained, currentHp: finalPlayerHp })
+    );
   };
 
   const renderMoveButton = (dir: DirectionKey, label: string) => {
@@ -270,7 +272,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           <button onClick={handleSave}>💾 Save</button>
           <button onClick={handleLoad}>📂 Load Game</button>
           <button onClick={onSwitchCharacter}>🔁 Switch Character</button>
-          <button onClick={() => setShowMiniMap(prev => !prev)}>
+          <button onClick={() => setShowMiniMap((prev) => !prev)}>
             {showMiniMap ? '🗺️ Hide Map' : '🗺️ Show Map'}
           </button>
         </div>
@@ -297,7 +299,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           xp={player.xp}
           nextLevelXp={nextLevelXp}
         />
-        <Inventory items={inventory} onRemove={(id) => setInventory(prev => prev.filter(i => i.id !== id))} />
+        <Inventory items={inventory} onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))} />
       </div>
     </div>
   );
