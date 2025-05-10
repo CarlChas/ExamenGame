@@ -1,4 +1,4 @@
-import { Rarity } from './lootTypes';
+import { Rarity, Rank } from './lootTypes';
 
 export const materials = ['Wooden', 'Copper', 'Iron', 'Steel', 'Obsidian', 'Magisteel', 'Dragonbone', 'Adamantium', 'Mythril'];
 
@@ -38,4 +38,19 @@ export const rarityChances: Record<Rarity, number> = {
     epic: 0.08,
     legendary: 0.02,
     mythic: 0.01,
+};
+
+
+export const rankChances: Record<Rank, number> = {
+    F: 0.25,
+    E: 0.2,
+    D: 0.15,
+    C: 0.12,
+    B: 0.1,
+    A: 0.08,
+    S: 0.05,
+    SS: 0.03,
+    SSS: 0.015,
+    UR: 0.01,
+    EX: 0.005,
 };

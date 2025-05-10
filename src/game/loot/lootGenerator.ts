@@ -1,5 +1,5 @@
-import { weaponTypes, armorPieces, consumables, miscItems, prefixList, suffixList, materials, rarityChances } from './lootData';
-import { LootItem, Rarity, Type, BonusStat } from './lootTypes';
+import { weaponTypes, armorPieces, consumables, miscItems, prefixList, suffixList, materials, rarityChances, rankChances } from './lootData';
+import { LootItem, Rarity, Type, BonusStat, Rank } from './lootTypes';
 
 function getRandom<T>(list: readonly T[]): T {
     return list[Math.floor(Math.random() * list.length)];
@@ -39,9 +39,20 @@ function generateBonusStats(rarity: Rarity): BonusStat[] {
     return bonuses;
 }
 
+function getRandomRank(): Rank {
+    const roll = Math.random();
+    let cumulative = 0;
+    for (const rank of Object.keys(rankChances) as Rank[]) {
+      cumulative += rankChances[rank];
+      if (roll < cumulative) return rank;
+    }
+    return 'F';
+  }
+
 export function generateRandomLoot(): LootItem {
     const type = getRandom(types);
     const rarity = getRandomRarity();
+    const rank = getRandomRank();
     const prefix = Math.random() < 0.7 ? getRandom(prefixList) : null;
     const suffix = Math.random() < 0.7 ? getRandom(suffixList) : null;
 
@@ -84,6 +95,7 @@ export function generateRandomLoot(): LootItem {
         name: baseName,
         type,
         rarity,
+        rank,
         material,
         value: baseValue,
         bonusStats,
