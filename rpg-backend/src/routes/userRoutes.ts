@@ -130,4 +130,21 @@ router.post('/save-progress', async (req, res) => {
 });
 
 
+// 🗑️ Delete character by ID
+router.delete('/delete-character/:id', async (req, res) => {
+  const characterId = parseInt(req.params.id);
+  if (isNaN(characterId)) return res.status(400).json({ error: 'Invalid character ID' });
+
+  try {
+    await prisma.character.delete({
+      where: { id: characterId },
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to delete character:', err);
+    res.status(500).json({ error: 'Failed to delete character' });
+  }
+});
+
+
 export default router;
