@@ -42,7 +42,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     };
   });
 
-  // Recalculate maxHp, maxMp, and nextLevelXp whenever player stats/level change
   const maxHp = calculateMaxHp(player);
   const maxMp = calculateMaxMp(player);
   const nextLevelXp = calculateNextLevelXp(player.level);
@@ -53,14 +52,17 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   }, [character, currentPos]);
 
   useEffect(() => {
+    handleLoad();
+  }, []);
+
+  useEffect(() => {
     setPlayer(prev => {
       let updated = { ...prev };
 
       while (updated.xp >= calculateNextLevelXp(updated.level)) {
         updated.level += 1;
-        updated.xp -= calculateNextLevelXp(updated.level - 1); // Subtract XP for that level
+        updated.xp -= calculateNextLevelXp(updated.level - 1);
 
-        // Stat growth example
         updated.strength += 1;
         updated.dexterity += 1;
         updated.intelligence += 1;
@@ -77,7 +79,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   const move = (dir: DirectionKey) => {
     const { x, y } = currentPos;
-
     const directions = {
       north: { x, y: y - 1, exit: 'north', entry: 'south' },
       south: { x, y: y + 1, exit: 'south', entry: 'north' },
@@ -109,10 +110,10 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       pos: currentPos,
       map: getMapData(),
       inventory,
-      currentHp: player.currentHp, // Save current HP
-      currentMp: player.currentMp, // Save current MP
-      xp: player.xp, // Save XP
-      level: player.level, // Save Level
+      currentHp: player.currentHp,
+      currentMp: player.currentMp,
+      xp: player.xp,
+      level: player.level,
     };
 
     await fetch('http://localhost:3001/api/users/save-progress', {
@@ -149,11 +150,10 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           currentMp: updatedChar.currentMp ?? prev.currentMp,
           xp: updatedChar.xp ?? prev.xp,
           level: updatedChar.level ?? prev.level,
-          // Ensure other stats are loaded if they are part of the saved data
           strength: updatedChar.strength ?? prev.strength,
           dexterity: updatedChar.dexterity ?? prev.dexterity,
           intelligence: updatedChar.intelligence ?? prev.intelligence,
-          endurance: updatedChar.endurance ?? prev.endurance, // Changed from vitality back to endurance
+          endurance: updatedChar.endurance ?? prev.endurance,
           luck: updatedChar.luck ?? prev.luck,
         }));
 
@@ -167,15 +167,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
-  // New function to handle player healing
   const handleHealPlayer = (npcName: string) => {
     const needsHealing = player.currentHp < maxHp || player.currentMp < maxMp;
-
     if (needsHealing) {
       setPlayer(prev => ({
         ...prev,
-        currentHp: maxHp, // Heal to max HP
-        currentMp: maxMp, // Heal to max MP
+        currentHp: maxHp,
+        currentMp: maxMp,
       }));
       setDialog(`${npcName} heals you completely!`);
     } else {
@@ -183,7 +181,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
-  // Modify onVictory to accept xpGained and finalPlayerHp
   const handleCombatVictory = (xpGained: number, finalPlayerHp: number) => {
     setInCombat(false);
     setEnemyInCombat(null);
@@ -192,16 +189,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       enemies: prev.enemies?.filter(e => e !== enemyInCombat)
     }));
     setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
-
-    // Add XP and update player HP state
     setPlayer(prev => ({
       ...prev,
       xp: prev.xp + xpGained,
-      currentHp: finalPlayerHp, // Update HP with the value from combat
-      // currentMp is not currently affected by combat, so no update needed here
+      currentHp: finalPlayerHp,
     }));
   };
-
 
   const renderMoveButton = (dir: DirectionKey, label: string) => {
     const directionOffsets = {
@@ -223,10 +216,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       <button
         onClick={() => move(dir)}
         disabled={isBlocked}
-        style={{
-          opacity: isBlocked ? 0.3 : 1,
-          cursor: isBlocked ? 'not-allowed' : 'pointer'
-        }}
+        style={{ opacity: isBlocked ? 0.3 : 1, cursor: isBlocked ? 'not-allowed' : 'pointer' }}
       >
         {label}
       </button>
@@ -238,13 +228,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       <CombatScreen
         player={player}
         enemy={enemyInCombat}
-        // Pass the new handleCombatVictory function
         onVictory={handleCombatVictory}
         onDefeat={async () => {
           setInCombat(false);
           setEnemyInCombat(null);
           setDialog('You were defeated, child of time... The gears of time turns in reverse...');
-          await handleLoad(); // Load last saved state on defeat
+          await handleLoad();
         }}
       />
     );
@@ -252,7 +241,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}\
+      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
       <CharacterStats character={player} />
 
       <div>
@@ -288,37 +277,16 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         </div>
 
         {dialog && (
-          <div style={{
-            marginTop: '1rem',
-            backgroundColor: '#111',
-            color: '#fff',
-            padding: '1rem',
-            border: '2px solid #555',
-            borderRadius: '8px',
-            textAlign: 'center',
-            maxWidth: '600px',
-          }}>
+          <div style={{ marginTop: '1rem', backgroundColor: '#111', color: '#fff', padding: '1rem', border: '2px solid #555', borderRadius: '8px', textAlign: 'center', maxWidth: '600px' }}>
             <p>{dialog}</p>
             <button onClick={() => setDialog(null)}>Close</button>
           </div>
         )}
       </div>
 
-      <div style={{
-        minWidth: '240px',
-        color: 'white',
-        backgroundColor: '#1a1a1a',
-        padding: '1rem',
-        borderRadius: '8px'
-      }}>
+      <div style={{ minWidth: '240px', color: 'white', backgroundColor: '#1a1a1a', padding: '1rem', borderRadius: '8px' }}>
         <h3 style={{ marginTop: 0 }}>{player.name}</h3>
-        <div style={{
-          width: '100%',
-          height: '120px',
-          backgroundColor: '#333',
-          borderRadius: '4px',
-          marginBottom: '1rem'
-        }}>
+        <div style={{ width: '100%', height: '120px', backgroundColor: '#333', borderRadius: '4px', marginBottom: '1rem' }}>
           <p style={{ textAlign: 'center', paddingTop: '40px', color: '#bbb' }}>Portrait</p>
         </div>
         <StatPanel
