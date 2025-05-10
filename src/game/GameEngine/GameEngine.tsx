@@ -1,6 +1,4 @@
-// src/game/GameEngine/GameEngine.tsx
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getArea, Area, getMapData, setMapData } from '../map/map';
 import Inventory from '../inventory/Inventory';
 import { LootItem } from '../loot/index';
@@ -8,7 +6,7 @@ import StatPanel from '../ui/StatPanel';
 import CharacterStats from '../ui/CharacterStats';
 import { Character } from '../types/characterTypes';
 import CombatScreen from '../ui/CombatScreen';
-import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp } from './stats';
+import { calculateMaxHp, calculateMaxMp, calculateNextLevelXp, normalizeCharacter } from './stats';
 import MiniMap from '../map/MiniMap';
 import CanvasArea from './CanvasArea';
 
@@ -22,46 +20,44 @@ type DirectionKey = 'north' | 'south' | 'east' | 'west';
 const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
-  const [inventory, setInventory] = useState<LootItem[]>(() => character.inventory ?? []);
-  const [currentPos, setCurrentPos] = useState(character.pos ?? { x: 0, y: 0 });
+  const [inventory, setInventory] = useState<LootItem[]>([]);
+  const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [inCombat, setInCombat] = useState(false);
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
 
-  const [player, setPlayer] = useState<Character>(() => {
-    const level = character.level || 1;
-    const baseCharacter = { ...character, level };
-    const maxHp = calculateMaxHp(baseCharacter);
-    const maxMp = calculateMaxMp(baseCharacter);
+  const [player, setPlayer] = useState<Character | null>(null);
 
-    return {
-      ...baseCharacter,
-      xp: character.xp ?? 0,
-      currentHp: character.currentHp ?? maxHp,
-      currentMp: character.currentMp ?? maxMp,
-    };
-  });
-
-  const maxHp = calculateMaxHp(player);
-  const maxMp = calculateMaxMp(player);
-  const nextLevelXp = calculateNextLevelXp(player.level);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
-    setArea(getArea(currentPos.x, currentPos.y));
-    if (character.map) setMapData(character.map);
-  }, [character, currentPos]);
-
-  useEffect(() => {
-    handleLoad();
+    if (!hasLoadedRef.current) {
+      handleLoad();
+      hasLoadedRef.current = true;
+    }
   }, []);
 
+
   useEffect(() => {
+    if (player) {
+      setArea(getArea(player.pos?.x ?? 0, player.pos?.y ?? 0));
+      if (player.map) setMapData(player.map);
+      setInventory(player.inventory ?? []);
+      setCurrentPos(player.pos ?? { x: 0, y: 0 });
+    }
+  }, [player]);
+
+  useEffect(() => {
+    if (!player) return;
+
     setPlayer(prev => {
+      if (!prev) return null;
+
       let updated = { ...prev };
 
       while (updated.xp >= calculateNextLevelXp(updated.level)) {
+        updated.xp -= calculateNextLevelXp(updated.level);
         updated.level += 1;
-        updated.xp -= calculateNextLevelXp(updated.level - 1);
 
         updated.strength += 1;
         updated.dexterity += 1;
@@ -73,9 +69,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         updated.currentMp = calculateMaxMp(updated);
       }
 
-      return updated;
+      return normalizeCharacter(updated);
     });
-  }, [player.xp]);
+  }, [player?.xp]);
+
+  const maxHp = player ? calculateMaxHp(player) : 0;
+  const maxMp = player ? calculateMaxMp(player) : 0;
+  const nextLevelXp = player ? calculateNextLevelXp(player.level) : 0;
 
   const move = (dir: DirectionKey) => {
     const { x, y } = currentPos;
@@ -104,7 +104,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   const handleSave = async () => {
     const username = localStorage.getItem('currentUser');
-    if (!username) return;
+    if (!username || !player) return;
 
     const saveData = {
       pos: currentPos,
@@ -136,30 +136,16 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     try {
       const res = await fetch(`http://localhost:3001/api/users/load/${username}`);
       const characters = await res.json();
-      const updatedChar = characters.find((c: any) => c.id === player.id);
+
+      const updatedChar = characters.find((c: any) => c.id === character.id);
 
       if (updatedChar) {
-        setCurrentPos(updatedChar.pos ?? { x: 0, y: 0 });
-        setInventory(updatedChar.inventory ?? []);
-        setMapData(updatedChar.map ?? {});
-        setArea(getArea(updatedChar.pos?.x ?? 0, updatedChar.pos?.y ?? 0));
-
-        setPlayer(prev => ({
-          ...prev,
-          currentHp: updatedChar.currentHp ?? prev.currentHp,
-          currentMp: updatedChar.currentMp ?? prev.currentMp,
-          xp: updatedChar.xp ?? prev.xp,
-          level: updatedChar.level ?? prev.level,
-          strength: updatedChar.strength ?? prev.strength,
-          dexterity: updatedChar.dexterity ?? prev.dexterity,
-          intelligence: updatedChar.intelligence ?? prev.intelligence,
-          endurance: updatedChar.endurance ?? prev.endurance,
-          luck: updatedChar.luck ?? prev.luck,
-        }));
-
+        setPlayer(normalizeCharacter(updatedChar));
         setDialog('Progress loaded!');
       } else {
-        alert('No saved data for this character!');
+        // No save exists — use default starting character
+        setPlayer(normalizeCharacter(character));
+        setDialog('No previous save. Starting fresh!');
       }
     } catch (err) {
       console.error('Failed to load character data:', err);
@@ -167,10 +153,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
+
   const handleHealPlayer = (npcName: string) => {
+    if (!player) return;
+
     const needsHealing = player.currentHp < maxHp || player.currentMp < maxMp;
     if (needsHealing) {
-      setPlayer(prev => ({
+      setPlayer(prev => prev && normalizeCharacter({
         ...prev,
         currentHp: maxHp,
         currentMp: maxMp,
@@ -182,6 +171,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   };
 
   const handleCombatVictory = (xpGained: number, finalPlayerHp: number) => {
+    if (!player) return;
+
     setInCombat(false);
     setEnemyInCombat(null);
     setArea(prev => ({
@@ -189,7 +180,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       enemies: prev.enemies?.filter(e => e !== enemyInCombat)
     }));
     setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
-    setPlayer(prev => ({
+    setPlayer(prev => prev && normalizeCharacter({
       ...prev,
       xp: prev.xp + xpGained,
       currentHp: finalPlayerHp,
@@ -222,6 +213,10 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       </button>
     );
   };
+
+  if (!player) {
+    return <p style={{ color: 'white', textAlign: 'center', marginTop: '2rem' }}>Loading character...</p>;
+  }
 
   if (inCombat && enemyInCombat) {
     return (
