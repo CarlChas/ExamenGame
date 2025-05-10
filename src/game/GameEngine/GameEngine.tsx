@@ -33,30 +33,30 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   const [player, setPlayer] = useState<Character | null>(null);
 
-  const hasLoadedRef = useRef(false);
-  const hasInitializedPlayerState = useRef(false);
-  const justLoadedRef = useRef(false);
+  const hasLoadedOnce = useRef(false);
+  const hasSyncedPlayerData = useRef(false);
+  const skipNextXpEffect = useRef(false);
 
   useEffect(() => {
-    if (!hasLoadedRef.current) {
+    if (!hasLoadedOnce.current) {
       handleLoad();
-      hasLoadedRef.current = true;
+      hasLoadedOnce.current = true;
     }
   }, []);
 
   useEffect(() => {
-    if (player && !hasInitializedPlayerState.current) {
+    if (player && !hasSyncedPlayerData.current) {
       setArea(getArea(player.pos?.x ?? 0, player.pos?.y ?? 0));
       if (player.map) setMapData(player.map);
       setInventory(player.inventory ?? []);
       setCurrentPos(player.pos ?? { x: 0, y: 0 });
-      hasInitializedPlayerState.current = true;
+      hasSyncedPlayerData.current = true;
     }
   }, [player]);
 
   useEffect(() => {
-    if (!player || justLoadedRef.current) {
-      justLoadedRef.current = false;
+    if (!player || skipNextXpEffect.current) {
+      skipNextXpEffect.current = false;
       return;
     }
 
@@ -68,18 +68,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       while (updated.xp >= calculateNextLevelXp(updated.level)) {
         updated.xp -= calculateNextLevelXp(updated.level);
         updated.level += 1;
-
-        updated.strength += 1;
-        updated.dexterity += 1;
-        updated.intelligence += 1;
-        updated.endurance += 1;
-        updated.luck += 1;
-
-        updated.currentHp = calculateMaxHp(updated);
-        updated.currentMp = calculateMaxMp(updated);
       }
 
-      return normalizeCharacter(updated);
+      updated.currentHp = calculateMaxHp(updated);
+      updated.currentMp = calculateMaxMp(updated);
+
+      return updated;
     });
   }, [player?.xp]);
 
@@ -142,17 +136,30 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const handleLoad = async () => {
     const username = localStorage.getItem('currentUser');
     if (!username) return;
-
+  
     try {
       const res = await fetch(`http://localhost:3001/api/users/load/${username}`);
       const characters = await res.json();
       const updatedChar = characters.find((c: any) => c.id === character.id);
-
-      hasInitializedPlayerState.current = false;
-      justLoadedRef.current = true;
-
+  
+      hasSyncedPlayerData.current = false;
+  
       if (updatedChar) {
-        setPlayer(normalizeCharacter(updatedChar));
+        let playerData = normalizeCharacter(updatedChar);
+  
+        // Retroactively level up stats and level
+        while (playerData.xp >= calculateNextLevelXp(playerData.level)) {
+          playerData.xp -= calculateNextLevelXp(playerData.level);
+          playerData.level += 1;
+  
+          playerData.strength += 1;
+          playerData.dexterity += 1;
+          playerData.intelligence += 1;
+          playerData.endurance += 1;
+          playerData.luck += 1;
+        }
+  
+        setPlayer(playerData);
         setDialog('Progress loaded!');
       } else {
         setPlayer(normalizeCharacter(character));
@@ -163,14 +170,14 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       alert('Error loading character data');
     }
   };
-
+  
   const handleHealPlayer = (npcName: string) => {
     if (!player) return;
 
     const needsHealing = player.currentHp < maxHp || player.currentMp < maxMp;
     if (needsHealing) {
       setPlayer((prev) =>
-        prev && normalizeCharacter({ ...prev, currentHp: maxHp, currentMp: maxMp })
+        prev && { ...prev, currentHp: maxHp, currentMp: maxMp }
       );
       setDialog(`${npcName} heals you completely!`);
     } else {
@@ -189,7 +196,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }));
     setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
     setPlayer((prev) =>
-      prev && normalizeCharacter({ ...prev, xp: prev.xp + xpGained, currentHp: finalPlayerHp })
+      prev && { ...prev, xp: prev.xp + xpGained, currentHp: finalPlayerHp }
     );
   };
 
