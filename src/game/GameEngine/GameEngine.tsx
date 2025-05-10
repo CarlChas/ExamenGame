@@ -68,6 +68,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       while (updated.xp >= calculateNextLevelXp(updated.level)) {
         updated.xp -= calculateNextLevelXp(updated.level);
         updated.level += 1;
+
+        updated.strength += 1;
+        updated.dexterity += 1;
+        updated.intelligence += 1;
+        updated.endurance += 1;
+        updated.luck += 1;
       }
 
       updated.currentHp = calculateMaxHp(updated);
@@ -118,6 +124,14 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       currentMp: player.currentMp,
       xp: player.xp,
       level: player.level,
+      strength: player.strength,
+      dexterity: player.dexterity,
+      intelligence: player.intelligence,
+      wisdom: player.wisdom,
+      endurance: player.endurance,
+      charisma: player.charisma,
+      luck: player.luck,
+      divinity: player.divinity,
     };
 
     await fetch('http://localhost:3001/api/users/save-progress', {
@@ -136,29 +150,28 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const handleLoad = async () => {
     const username = localStorage.getItem('currentUser');
     if (!username) return;
-  
+
     try {
       const res = await fetch(`http://localhost:3001/api/users/load/${username}`);
       const characters = await res.json();
       const updatedChar = characters.find((c: any) => c.id === character.id);
-  
+
       hasSyncedPlayerData.current = false;
-  
+
       if (updatedChar) {
         let playerData = normalizeCharacter(updatedChar);
-  
-        // Retroactively level up stats and level
+
         while (playerData.xp >= calculateNextLevelXp(playerData.level)) {
           playerData.xp -= calculateNextLevelXp(playerData.level);
           playerData.level += 1;
-  
+
           playerData.strength += 1;
           playerData.dexterity += 1;
           playerData.intelligence += 1;
           playerData.endurance += 1;
           playerData.luck += 1;
         }
-  
+
         setPlayer(playerData);
         setDialog('Progress loaded!');
       } else {
@@ -170,7 +183,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       alert('Error loading character data');
     }
   };
-  
+
   const handleHealPlayer = (npcName: string) => {
     if (!player) return;
 

@@ -111,6 +111,14 @@ router.post('/save-progress', async (req, res) => {
         currentMp: progress.currentMp,
         xp: progress.xp,
         level: progress.level,
+        strength: progress.strength,
+        dexterity: progress.dexterity,
+        intelligence: progress.intelligence,
+        wisdom: progress.wisdom,
+        endurance: progress.endurance,
+        charisma: progress.charisma,
+        luck: progress.luck,
+        divinity: progress.divinity,
       },
     });
 
