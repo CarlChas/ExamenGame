@@ -65,9 +65,12 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
       let updated = { ...prev };
 
+      let leveledUp = false;
+
       while (updated.xp >= calculateNextLevelXp(updated.level)) {
         updated.xp -= calculateNextLevelXp(updated.level);
         updated.level += 1;
+        leveledUp = true;
 
         updated.strength += 1;
         updated.dexterity += 1;
@@ -76,8 +79,11 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         updated.luck += 1;
       }
 
-      updated.currentHp = calculateMaxHp(updated);
-      updated.currentMp = calculateMaxMp(updated);
+      if (leveledUp) {
+        updated.currentHp = calculateMaxHp(updated);
+        updated.currentMp = calculateMaxMp(updated);
+      }
+
 
       return updated;
     });
