@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { getArea, Area, getMapData, setMapData } from '../map/map';
 import Inventory from '../inventory/Inventory';
 import { LootItem } from '../loot/index';
+import { generateRandomLoot } from '../loot';
 import StatPanel from '../ui/StatPanel';
 import CharacterStats from '../ui/CharacterStats';
 import { Character } from '../types/characterTypes';
@@ -30,6 +31,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [inCombat, setInCombat] = useState(false);
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
+  const [inspectedItem, setInspectedItem] = useState<LootItem | null>(null);
 
   const [player, setPlayer] = useState<Character | null>(null);
 
@@ -83,7 +85,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         updated.currentHp = calculateMaxHp(updated);
         updated.currentMp = calculateMaxMp(updated);
       }
-
 
       return updated;
     });
@@ -213,7 +214,18 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       ...prev,
       enemies: prev.enemies?.filter((e) => e !== enemyInCombat),
     }));
-    setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
+
+    const dropChance = 0.3; // 30%
+    let loot: LootItem | null = null;
+
+    if (Math.random() < dropChance) {
+      loot = generateRandomLoot();
+      setInventory(prev => loot ? [...prev, loot] : prev);
+
+    }
+
+    setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.${loot ? ` You found a ${loot.name}!` : ''}`);
+
     setPlayer((prev) =>
       prev && { ...prev, xp: prev.xp + xpGained, currentHp: finalPlayerHp }
     );
@@ -325,7 +337,32 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           xp={player.xp}
           nextLevelXp={nextLevelXp}
         />
-        <Inventory items={inventory} onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))} />
+        <Inventory
+          items={inventory}
+          onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
+          onInspect={(item) => setInspectedItem(item)}
+        />
+
+        {inspectedItem && (
+          <div style={{ background: '#222', color: '#fff', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
+            <h4>{inspectedItem.name}</h4>
+            <p>Type: {inspectedItem.type}</p>
+            <p>Rarity: {inspectedItem.rarity}</p>
+            <p>Material: {inspectedItem.material}</p>
+            <p>Value: {inspectedItem.value}g</p>
+            {inspectedItem.rank && <p>Rank: {inspectedItem.rank}</p>}
+            {inspectedItem.bonusStats && inspectedItem.bonusStats.length > 0 && (
+              <ul>
+                {inspectedItem.bonusStats.map((stat, idx) => (
+                  <li key={idx}>
+                    {stat.stat}: {stat.flat ?? 0}{stat.percent ? ` (+${stat.percent}%)` : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button onClick={() => setInspectedItem(null)}>Close</button>
+          </div>
+        )}
       </div>
     </div>
   );
