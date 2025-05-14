@@ -278,6 +278,49 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     );
   }
 
+  const equipItem = (item: LootItem) => {
+    if (!player) return;
+
+    setPlayer(prev => {
+      if (!prev) return null;
+
+      const updated = { ...prev };
+      const inv = [...(updated.inventory ?? [])];
+
+      const removeFromInventory = () => {
+        const index = inv.findIndex(i => i.id === item.id);
+        if (index !== -1) inv.splice(index, 1);
+      };
+
+      const pushOldToInventory = (oldItem?: LootItem) => {
+        if (oldItem) inv.push(oldItem);
+      };
+
+      removeFromInventory();
+
+      if (item.type === 'weapon') {
+        pushOldToInventory(updated.equipment.weapon1);
+        updated.equipment.weapon1 = item;
+      } else if (item.type === 'armor') {
+        // Use name/slot hints like "Helmet", "Chestplate", etc.
+        const slot = item.name.toLowerCase().includes('helmet') ? 'helmet' :
+          item.name.toLowerCase().includes('chest') ? 'chest' :
+            item.name.toLowerCase().includes('back') ? 'back' :
+              item.name.toLowerCase().includes('legs') ? 'legs' :
+                item.name.toLowerCase().includes('boots') ? 'boots' : null;
+
+        if (slot && slot in updated.equipment.armor) {
+          pushOldToInventory(updated.equipment.armor[slot]);
+          updated.equipment.armor[slot] = item;
+        }
+      }
+
+      updated.inventory = inv;
+      return updated;
+    });
+  };
+
+
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
       {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
@@ -341,6 +384,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           items={inventory}
           onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
           onInspect={(item) => setInspectedItem(item)}
+          onEquip={equipItem}
         />
 
         {inspectedItem && (
