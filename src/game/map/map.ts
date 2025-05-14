@@ -427,6 +427,7 @@ export function getMapData(): Record<string, Area> {
 }
 
 export function setMapData(data: Record<string, Area>) {
+    mapData.clear();
     Object.entries(data).forEach(([key, value]) => {
         mapData.set(key, value);
     });
