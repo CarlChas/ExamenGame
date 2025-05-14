@@ -32,6 +32,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
 
   const [player, setPlayer] = useState<Character | null>(null);
+  const [insideLandmark, setInsideLandmark] = useState<string | null>(null);
 
   const hasLoadedOnce = useRef(false);
   const hasSyncedPlayerData = useRef(false);
@@ -265,7 +266,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       />
     );
   }
-
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
       {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
@@ -280,7 +280,10 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           setInCombat={setInCombat}
           setEnemyInCombat={setEnemyInCombat}
           onHealPlayer={handleHealPlayer}
+          insideLandmark={insideLandmark}
+          setInsideLandmark={setInsideLandmark}
         />
+
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1rem' }}>
           <div />

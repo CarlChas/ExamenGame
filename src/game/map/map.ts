@@ -31,6 +31,7 @@ export interface Area {
     };
     landmarks?: Landmark[];
     role?: LandmarkType | 'gate' | 'core';
+    interiorNpcs?: Record<string, NPC[]>;
 }
 
 export interface BiomeSeed {
