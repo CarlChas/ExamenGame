@@ -8,7 +8,9 @@ interface Props {
   setDialog: Dispatch<SetStateAction<string | null>>;
   setInCombat: Dispatch<SetStateAction<boolean>>;
   setEnemyInCombat: Dispatch<SetStateAction<any>>;
-  onHealPlayer: (npcName: string) => void; // Update prop type
+  onHealPlayer: (npcName: string) => void;
+  insideLandmark: string | null;
+  setInsideLandmark: Dispatch<SetStateAction<string | null>>;
 }
 
 const CanvasArea = ({
@@ -17,6 +19,8 @@ const CanvasArea = ({
   setInCombat,
   setEnemyInCombat,
   onHealPlayer,
+  insideLandmark,
+  setInsideLandmark,
 }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const enemyImages = useRef<Record<string, HTMLImageElement>>({});
@@ -51,7 +55,11 @@ const CanvasArea = ({
   };
 
   const drawNPCs = (ctx: CanvasRenderingContext2D) => {
-    area.npcs.forEach(npc => {
+    const npcs = insideLandmark
+      ? area.interiorNpcs?.[insideLandmark] ?? []
+      : area.npcs;
+
+    npcs.forEach(npc => {
       ctx.beginPath();
       ctx.arc(npc.x, npc.y, npc.radius, 0, Math.PI * 2);
       ctx.fillStyle = 'skyblue';
@@ -63,6 +71,7 @@ const CanvasArea = ({
   };
 
   const drawEnemies = (ctx: CanvasRenderingContext2D) => {
+    if (insideLandmark) return; // No enemies indoors
     area.enemies?.forEach(enemy => {
       const ex = enemy.x ?? 0;
       const ey = enemy.y ?? 0;
@@ -109,16 +118,32 @@ const CanvasArea = ({
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
+      if (insideLandmark) {
+        setInsideLandmark(null);
+        setDialog(`You step outside.`);
+        return;
+      }
+
+      for (let landmark of area.landmarks ?? []) {
+        const dx = x - landmark.x;
+        const dy = y - landmark.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 25) {
+          setInsideLandmark(landmark.type);
+          setDialog(`You enter the ${landmark.type}.`);
+          return;
+        }
+      }
+
       for (let npc of area.npcs) {
         const dx = x - npc.x;
         const dy = y - npc.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < npc.radius) {
-          // Check if the NPC is an Inn or Tavern
           if (npc.type === 'inn' || npc.type === 'tavern') {
             onHealPlayer(npc.name);
           } else {
-             setDialog(npc.dialog); // Set default dialog for other NPCs
+            setDialog(npc.dialog);
           }
           return;
         }
@@ -127,7 +152,7 @@ const CanvasArea = ({
       for (let enemy of area.enemies ?? []) {
         const dx = x - (enemy.x ?? 0);
         const dy = y - (enemy.y ?? 0);
-        const dist = Math.sqrt(dx * dx + dy + dy);
+        const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 20) {
           setEnemyInCombat(enemy);
           setInCombat(true);
@@ -166,7 +191,7 @@ const CanvasArea = ({
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [area, onHealPlayer]); // onHealPlayer is now stable, but keep in dependency array
+  }, [area, onHealPlayer, insideLandmark]);
 
   return (
     <canvas
