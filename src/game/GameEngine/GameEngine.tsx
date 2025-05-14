@@ -32,7 +32,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [inCombat, setInCombat] = useState(false);
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
   const [inspectedItem, setInspectedItem] = useState<LootItem | null>(null);
-
   const [player, setPlayer] = useState<Character | null>(null);
 
   const hasLoadedOnce = useRef(false);
@@ -138,8 +137,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       endurance: player.endurance,
       charisma: player.charisma,
       luck: player.luck,
-      divinity: player.divinity,
-    };
+      divinity: player.divinity,    };
 
     await fetch('http://localhost:3001/api/users/save-progress', {
       method: 'POST',
@@ -215,21 +213,21 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       enemies: prev.enemies?.filter((e) => e !== enemyInCombat),
     }));
 
-    const dropChance = 0.3; // 30%
-    let loot: LootItem | null = null;
+    const dropChance = 0.3;
+    const loot = Math.random() < dropChance ? generateRandomLoot() : null;
 
-    if (Math.random() < dropChance) {
-      loot = generateRandomLoot();
-      setInventory(prev => loot ? [...prev, loot] : prev);
-
+    if (loot) {
+      setInventory(prev => [...prev, loot]);
+      setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP. You found a ${loot.name}!`);
+    } else {
+      setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
     }
-
-    setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.${loot ? ` You found a ${loot.name}!` : ''}`);
 
     setPlayer((prev) =>
       prev && { ...prev, xp: prev.xp + xpGained, currentHp: finalPlayerHp }
     );
   };
+
 
   const renderMoveButton = (dir: DirectionKey, label: string) => {
     const directionOffsets = {
@@ -302,7 +300,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         pushOldToInventory(updated.equipment.weapon1);
         updated.equipment.weapon1 = item;
       } else if (item.type === 'armor') {
-        // Use name/slot hints like "Helmet", "Chestplate", etc.
         const slot = item.name.toLowerCase().includes('helmet') ? 'helmet' :
           item.name.toLowerCase().includes('chest') ? 'chest' :
             item.name.toLowerCase().includes('back') ? 'back' :
@@ -319,7 +316,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       return updated;
     });
   };
-
 
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
@@ -371,6 +367,19 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         <div style={{ width: '100%', height: '120px', backgroundColor: '#333', borderRadius: '4px', marginBottom: '1rem' }}>
           <p style={{ textAlign: 'center', paddingTop: '40px', color: '#bbb' }}>Portrait</p>
         </div>
+
+        {player.equipment && (
+          <div style={{ backgroundColor: '#2a2a2a', padding: '0.5rem', borderRadius: '6px', marginBottom: '1rem' }}>
+            <h4 style={{ margin: '0.5rem 0' }}>Equipped</h4>
+            <p><strong>Weapon:</strong> {player.equipment.weapon1?.name ?? 'None'}</p>
+            <p><strong>Helmet:</strong> {player.equipment.armor?.helmet?.name ?? 'None'}</p>
+            <p><strong>Chest:</strong> {player.equipment.armor?.chest?.name ?? 'None'}</p>
+            <p><strong>Back:</strong> {player.equipment.armor?.back?.name ?? 'None'}</p>
+            <p><strong>Legs:</strong> {player.equipment.armor?.legs?.name ?? 'None'}</p>
+            <p><strong>Boots:</strong> {player.equipment.armor?.boots?.name ?? 'None'}</p>
+          </div>
+        )}
+
         <StatPanel
           currentHp={player.currentHp}
           maxHp={maxHp}
@@ -383,7 +392,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         <Inventory
           items={inventory}
           onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
-          onInspect={(item) => setInspectedItem(item)}
+          onInspect={setInspectedItem}
           onEquip={equipItem}
         />
 
