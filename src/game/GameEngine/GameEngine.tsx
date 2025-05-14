@@ -23,6 +23,8 @@ interface Props {
 
 type DirectionKey = 'north' | 'south' | 'east' | 'west';
 
+type ArmorSlot = 'helmet' | 'chest' | 'back' | 'legs' | 'boots';
+
 const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
@@ -123,21 +125,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     if (!username || !player) return;
 
     const saveData = {
+      ...player,
       pos: currentPos,
       map: getMapData(),
       inventory,
-      currentHp: player.currentHp,
-      currentMp: player.currentMp,
-      xp: player.xp,
-      level: player.level,
-      strength: player.strength,
-      dexterity: player.dexterity,
-      intelligence: player.intelligence,
-      wisdom: player.wisdom,
-      endurance: player.endurance,
-      charisma: player.charisma,
-      luck: player.luck,
-      divinity: player.divinity,    };
+    };
+
+    console.log("SAVE DATA:", saveData);
 
     await fetch('http://localhost:3001/api/users/save-progress', {
       method: 'POST',
@@ -160,6 +154,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       const res = await fetch(`http://localhost:3001/api/users/load/${username}`);
       const characters = await res.json();
       const updatedChar = characters.find((c: any) => c.id === character.id);
+      console.log("LOADED CHARACTER DATA:", updatedChar);
+      console.log("Loaded equipment:", updatedChar?.equipment);
 
       hasSyncedPlayerData.current = false;
 
@@ -300,21 +296,75 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         pushOldToInventory(updated.equipment.weapon1);
         updated.equipment.weapon1 = item;
       } else if (item.type === 'armor') {
-        const slot = item.name.toLowerCase().includes('helmet') ? 'helmet' :
-          item.name.toLowerCase().includes('chest') ? 'chest' :
-            item.name.toLowerCase().includes('back') ? 'back' :
-              item.name.toLowerCase().includes('legs') ? 'legs' :
-                item.name.toLowerCase().includes('boots') ? 'boots' : null;
+        const slot: ArmorSlot | null =
+          item.name.toLowerCase().includes('helmet') ? 'helmet' :
+            item.name.toLowerCase().includes('chest') ? 'chest' :
+              item.name.toLowerCase().includes('back') ? 'back' :
+                item.name.toLowerCase().includes('legs') ? 'legs' :
+                  item.name.toLowerCase().includes('boots') ? 'boots' : null;
 
         if (slot && slot in updated.equipment.armor) {
-          pushOldToInventory(updated.equipment.armor[slot]);
-          updated.equipment.armor[slot] = item;
+          if (slot) {
+            pushOldToInventory(updated.equipment.armor[slot]);
+            updated.equipment.armor[slot] = item;
+          }
         }
       }
 
       updated.inventory = inv;
       return updated;
     });
+  };
+
+  const unequipItem = (item: LootItem) => {
+    if (!player) return;
+
+    setPlayer(prev => {
+      if (!prev) return null;
+
+      const updated = { ...prev };
+      const inv = [...(updated.inventory ?? [])];
+      inv.push(item); // Add unequipped item back to inventory
+
+      if (item.type === 'weapon') {
+        if (updated.equipment.weapon1?.id === item.id) {
+          updated.equipment.weapon1 = undefined;
+        }
+      } else if (item.type === 'armor') {
+        const slot: ArmorSlot | null = item.name.toLowerCase().includes('helmet') ? 'helmet' :
+          item.name.toLowerCase().includes('chest') ? 'chest' :
+            item.name.toLowerCase().includes('back') ? 'back' :
+              item.name.toLowerCase().includes('legs') ? 'legs' :
+                item.name.toLowerCase().includes('boots') ? 'boots' : null;
+
+        if (slot && updated.equipment.armor[slot]?.id === item.id) {
+          updated.equipment.armor[slot] = undefined;
+        }
+      }
+
+      updated.inventory = inv;
+      return updated;
+    });
+  };
+
+  const isEquipped = (item: LootItem): boolean => {
+    if (!player || !player.equipment) return false;
+
+    if (item.type === 'weapon') {
+      return player.equipment.weapon1?.id === item.id;
+    }
+
+    if (
+      item.type === 'armor' &&
+      player.equipment &&
+      player.equipment.armor &&
+      Object.values(player.equipment.armor).some(slot => slot?.id === item.id)
+    ) {
+      return true;
+    }
+
+
+    return false;
   };
 
   return (
@@ -367,19 +417,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         <div style={{ width: '100%', height: '120px', backgroundColor: '#333', borderRadius: '4px', marginBottom: '1rem' }}>
           <p style={{ textAlign: 'center', paddingTop: '40px', color: '#bbb' }}>Portrait</p>
         </div>
-
-        {player.equipment && (
-          <div style={{ backgroundColor: '#2a2a2a', padding: '0.5rem', borderRadius: '6px', marginBottom: '1rem' }}>
-            <h4 style={{ margin: '0.5rem 0' }}>Equipped</h4>
-            <p><strong>Weapon:</strong> {player.equipment.weapon1?.name ?? 'None'}</p>
-            <p><strong>Helmet:</strong> {player.equipment.armor?.helmet?.name ?? 'None'}</p>
-            <p><strong>Chest:</strong> {player.equipment.armor?.chest?.name ?? 'None'}</p>
-            <p><strong>Back:</strong> {player.equipment.armor?.back?.name ?? 'None'}</p>
-            <p><strong>Legs:</strong> {player.equipment.armor?.legs?.name ?? 'None'}</p>
-            <p><strong>Boots:</strong> {player.equipment.armor?.boots?.name ?? 'None'}</p>
-          </div>
-        )}
-
         <StatPanel
           currentHp={player.currentHp}
           maxHp={maxHp}
@@ -394,6 +431,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
           onInspect={setInspectedItem}
           onEquip={equipItem}
+          onUnequip={unequipItem}
+          isEquipped={isEquipped}
         />
 
         {inspectedItem && (

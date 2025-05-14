@@ -15,9 +15,25 @@ export const normalizeCharacter = (char: Character): Character => {
 
   return {
     ...char,
+    equipment: {
+      weapon1: char.equipment?.weapon1 ?? undefined,
+      weapon2: char.equipment?.weapon2 ?? undefined,
+      armor: {
+        helmet: char.equipment?.armor?.helmet ?? undefined,
+        chest: char.equipment?.armor?.chest ?? undefined,
+        back: char.equipment?.armor?.back ?? undefined,
+        legs: char.equipment?.armor?.legs ?? undefined,
+        boots: char.equipment?.armor?.boots ?? undefined,
+      },
+      necklace: char.equipment?.necklace ?? undefined,
+      belt: char.equipment?.belt ?? undefined,
+      ring1: char.equipment?.ring1 ?? undefined,
+      ring2: char.equipment?.ring2 ?? undefined,
+    },
     maxHp,
     maxMp,
     currentHp: Math.min(char.currentHp ?? maxHp, maxHp),
     currentMp: Math.min(char.currentMp ?? maxMp, maxMp),
   };
 };
+

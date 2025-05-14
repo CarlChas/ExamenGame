@@ -119,6 +119,7 @@ router.post('/save-progress', async (req, res) => {
         charisma: progress.charisma,
         luck: progress.luck,
         divinity: progress.divinity,
+        equipment: progress.equipment,
       },
     });
 

@@ -31,8 +31,8 @@ model Character {
   xp         Int
   currentHp  Int
   currentMp  Int
-  maxHp      Int
-  maxMp      Int
+  maxHp      Int?
+  maxMp      Int?
 
   // NEW FIELDS FOR SAVED PROGRESS
   pos        Json?
@@ -41,4 +41,5 @@ model Character {
 
   userId     Int
   user       User @relation(fields: [userId], references: [id])
+  equipment   Json?
 }
