@@ -42,4 +42,6 @@ model Character {
   userId     Int
   user       User @relation(fields: [userId], references: [id])
   equipment   Json?
+
+  baseStats Json?
 }

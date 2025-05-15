@@ -1,7 +1,8 @@
 import { Character } from '../game/types/characterTypes';
 import { BonusStat, LootItem, StatName } from '../game/loot/lootTypes';
 
-const validStats: StatName[] = [
+// Exact stat keys used in bonus loot
+export const validStats: StatName[] = [
     'Strength',
     'Dexterity',
     'Intelligence',
@@ -12,6 +13,18 @@ const validStats: StatName[] = [
     'Divinity',
 ];
 
+export const statNameMap: Record<StatName, 'strength' | 'dexterity' | 'intelligence' | 'wisdom' | 'endurance' | 'charisma' | 'luck' | 'divinity'> = {
+    Strength: 'strength',
+    Dexterity: 'dexterity',
+    Intelligence: 'intelligence',
+    Wisdom: 'wisdom',
+    Endurance: 'endurance',
+    Charisma: 'charisma',
+    Luck: 'luck',
+    Divinity: 'divinity',
+};
+
+// Collect all bonus stats from equipped items
 export function getEquippedBonuses(equipment: Character['equipment']): BonusStat[] {
     const allItems: (LootItem | undefined)[] = [
         equipment.weapon1,
@@ -38,15 +51,29 @@ export function getEquippedBonuses(equipment: Character['equipment']): BonusStat
     return bonuses;
 }
 
+// Apply stat bonuses to character based on base stats + equipment
 export function applyBonuses(character: Character): Character {
-    const updated = { ...character };
-    const bonuses = getEquippedBonuses(character.equipment);
+    const updated: Character = { ...character };
 
+    if (!updated.baseStats) {
+        updated.baseStats = {
+            strength: character.strength,
+            dexterity: character.dexterity,
+            intelligence: character.intelligence,
+            wisdom: character.wisdom,
+            endurance: character.endurance,
+            charisma: character.charisma,
+            luck: character.luck,
+            divinity: character.divinity,
+        };
+    }
+
+    const bonuses = getEquippedBonuses(updated.equipment);
     const flatBonuses: Partial<Record<StatName, number>> = {};
     const percentBonuses: Partial<Record<StatName, number>> = {};
 
     for (const bonus of bonuses) {
-        const stat = bonus.stat;
+        const stat = bonus.stat as StatName;
 
         if (bonus.flat) {
             flatBonuses[stat] = (flatBonuses[stat] || 0) + bonus.flat;
@@ -58,22 +85,11 @@ export function applyBonuses(character: Character): Character {
     }
 
     for (const stat of validStats) {
-        if (validStats.includes(stat)) {
-            const flat = flatBonuses[stat] || 0;
-            const percent = percentBonuses[stat] || 0;
+        const base = updated.baseStats[statNameMap[stat]];
+        const flat = flatBonuses[stat] || 0;
+        const percent = percentBonuses[stat] || 0;
 
-            switch (stat) {
-                case 'Strength': updated.strength = Math.floor((updated.strength + flat) * (1 + percent / 100)); break;
-                case 'Dexterity': updated.dexterity = Math.floor((updated.dexterity + flat) * (1 + percent / 100)); break;
-                case 'Intelligence': updated.intelligence = Math.floor((updated.intelligence + flat) * (1 + percent / 100)); break;
-                case 'Wisdom': updated.wisdom = Math.floor((updated.wisdom + flat) * (1 + percent / 100)); break;
-                case 'Endurance': updated.endurance = Math.floor((updated.endurance + flat) * (1 + percent / 100)); break;
-                case 'Charisma': updated.charisma = Math.floor((updated.charisma + flat) * (1 + percent / 100)); break;
-                case 'Luck': updated.luck = Math.floor((updated.luck + flat) * (1 + percent / 100)); break;
-                case 'Divinity': updated.divinity = Math.floor((updated.divinity + flat) * (1 + percent / 100)); break;
-            }
-        }
-
+        updated[statNameMap[stat]] = Math.floor((base + flat) * (1 + percent / 100));
     }
 
     return updated;

@@ -120,6 +120,7 @@ router.post('/save-progress', async (req, res) => {
         luck: progress.luck,
         divinity: progress.divinity,
         equipment: progress.equipment,
+        baseStats: progress.baseStats,
       },
     });
 

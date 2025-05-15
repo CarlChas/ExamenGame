@@ -39,4 +39,16 @@ export interface Character {
   pos?: { x: number; y: number };
   map?: any;
   inventory?: LootItem[];
+
+  baseStats?: {
+    strength: number;
+    dexterity: number;
+    intelligence: number;
+    wisdom: number;
+    endurance: number;
+    charisma: number;
+    luck: number;
+    divinity: number;
+  };
+
 }

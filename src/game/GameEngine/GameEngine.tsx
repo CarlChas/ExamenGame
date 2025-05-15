@@ -43,6 +43,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const hasSyncedPlayerData = useRef(false);
   const skipNextXpEffect = useRef(false);
 
+
   useEffect(() => {
     if (!hasLoadedOnce.current) {
       handleLoad();
@@ -133,6 +134,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       pos: currentPos,
       map: getMapData(),
       inventory,
+      ...player.baseStats,
     };
 
     console.log("SAVE DATA:", saveData);
@@ -163,8 +165,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
       hasSyncedPlayerData.current = false;
 
+      if (!updatedChar.baseStats) {
+        updatedChar.baseStats = {
+          strength: updatedChar.strength,
+          dexterity: updatedChar.dexterity,
+          intelligence: updatedChar.intelligence,
+          wisdom: updatedChar.wisdom,
+          endurance: updatedChar.endurance,
+          charisma: updatedChar.charisma,
+          luck: updatedChar.luck,
+          divinity: updatedChar.divinity,
+        };
+      }
+
+
       if (updatedChar) {
-        let playerData = normalizeCharacter(updatedChar);
+        let playerData = applyBonuses(normalizeCharacter(updatedChar));
+        setPlayer(applyBonuses(playerData));
 
         while (playerData.xp >= calculateNextLevelXp(playerData.level)) {
           playerData.xp -= calculateNextLevelXp(playerData.level);
@@ -179,10 +196,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
         setPlayer(playerData);
         setDialog('Progress loaded!');
+        if (!playerData.baseStats) {
+          playerData.baseStats = {
+            strength: playerData.strength,
+            dexterity: playerData.dexterity,
+            intelligence: playerData.intelligence,
+            wisdom: playerData.wisdom,
+            endurance: playerData.endurance,
+            charisma: playerData.charisma,
+            luck: playerData.luck,
+            divinity: playerData.divinity,
+          };
+        }
       } else {
         setPlayer(normalizeCharacter(character));
         setDialog('No previous save. Starting fresh!');
       }
+
     } catch (err) {
       console.error('Failed to load character data:', err);
       alert('Error loading character data');
@@ -316,7 +346,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       }
 
       updated.inventory = inv;
-      return updated;
+      return applyBonuses(updated);
     });
   };
 
@@ -347,7 +377,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       }
 
       updated.inventory = inv;
-      return updated;
+      return applyBonuses(updated);
     });
   };
 
