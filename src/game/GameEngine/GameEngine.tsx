@@ -15,6 +15,7 @@ import {
 } from './stats';
 import MiniMap from '../map/MiniMap';
 import CanvasArea from './CanvasArea';
+import InspectModal from '../ui/InspectModal';
 
 interface Props {
   character: Character;
@@ -35,6 +36,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
   const [inspectedItem, setInspectedItem] = useState<LootItem | null>(null);
   const [player, setPlayer] = useState<Character | null>(null);
+  const [showInventoryPanel, setShowInventoryPanel] = useState(false);
 
   const hasLoadedOnce = useRef(false);
   const hasSyncedPlayerData = useRef(false);
@@ -402,6 +404,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           <button onClick={() => setShowMiniMap((prev) => !prev)}>
             {showMiniMap ? '🗺️ Hide Map' : '🗺️ Show Map'}
           </button>
+          <button onClick={() => setShowInventoryPanel(true)}>🎒 Open Inventory</button>
+
         </div>
 
         {dialog && (
@@ -411,6 +415,32 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           </div>
         )}
       </div>
+
+      {showInventoryPanel && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0,
+          width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          zIndex: 1000,
+          padding: '2rem',
+          overflowY: 'auto'
+        }}>
+          <button onClick={() => setShowInventoryPanel(false)} style={{ float: 'right' }}>❌ Close</button>
+          <Inventory
+            items={inventory}
+            onEquip={equipItem}
+            onUnequip={unequipItem}
+            onRemove={(id) => setInventory(prev => prev.filter(i => i.id !== id))}
+            onInspect={setInspectedItem}
+            isEquipped={isEquipped}
+          />
+        </div>
+      )}
+
+      {inspectedItem && (
+        <InspectModal item={inspectedItem} onClose={() => setInspectedItem(null)} />
+      )}
 
       <div style={{ minWidth: '240px', color: 'white', backgroundColor: '#1a1a1a', padding: '1rem', borderRadius: '8px' }}>
         <h3 style={{ marginTop: 0 }}>{player.name}</h3>
@@ -434,27 +464,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           onUnequip={unequipItem}
           isEquipped={isEquipped}
         />
-
-        {inspectedItem && (
-          <div style={{ background: '#222', color: '#fff', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
-            <h4>{inspectedItem.name}</h4>
-            <p>Type: {inspectedItem.type}</p>
-            <p>Rarity: {inspectedItem.rarity}</p>
-            <p>Material: {inspectedItem.material}</p>
-            <p>Value: {inspectedItem.value}g</p>
-            {inspectedItem.rank && <p>Rank: {inspectedItem.rank}</p>}
-            {inspectedItem.bonusStats && inspectedItem.bonusStats.length > 0 && (
-              <ul>
-                {inspectedItem.bonusStats.map((stat, idx) => (
-                  <li key={idx}>
-                    {stat.stat}: {stat.flat ?? 0}{stat.percent ? ` (+${stat.percent}%)` : ''}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button onClick={() => setInspectedItem(null)}>Close</button>
-          </div>
-        )}
       </div>
     </div>
   );
