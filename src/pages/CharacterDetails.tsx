@@ -3,15 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Character } from '../game/types/characterTypes';
 import { LootItem } from '../game/loot/lootTypes';
 import { calculateMaxHp, calculateMaxMp } from '../game/GameEngine/stats';
-
-const rarityColors: Record<string, string> = {
-    common: '#aaa',
-    uncommon: '#1eff00',
-    rare: '#0070dd',
-    epic: '#a335ee',
-    legendary: '#ff8000',
-    mythic: '#ff00ff',
-};
+import { rarityColor } from '../utils/colorUtils';
+import InspectModal from '../game/ui/InspectModal';
 
 const CharacterDetailPage = () => {
     const { id } = useParams();
@@ -60,7 +53,7 @@ const CharacterDetailPage = () => {
     const renderItem = (item?: LootItem, label?: string) => (
         item ? (
             <li
-                style={{ color: rarityColors[item.rarity], cursor: 'pointer' }}
+                style={{ color: rarityColor(item.rarity), cursor: 'pointer' }}
                 onClick={() => setSelectedItem(item)}
             >
                 <strong>{label}:</strong> {item.name}
@@ -170,52 +163,7 @@ const CharacterDetailPage = () => {
             </div>
 
             {selectedItem && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.7)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{
-                        background: '#222',
-                        padding: '2rem',
-                        borderRadius: '10px',
-                        width: '300px',
-                        textAlign: 'center',
-                        color: 'white'
-                    }}>
-                        <h2 style={{ color: rarityColors[selectedItem.rarity] }}>{selectedItem.name}</h2>
-                        <p><strong>Type:</strong> {selectedItem.type}</p>
-                        <p><strong>Rarity:</strong> {selectedItem.rarity}</p>
-                        <p><strong>Material:</strong> {selectedItem.material}</p>
-                        <p><strong>Value:</strong> {selectedItem.value}g</p>
-
-                        {/* Bonus Stats */}
-                        {selectedItem.bonusStats && selectedItem.bonusStats.length > 0 && (
-                            <div style={{ marginTop: '1rem' }}>
-                                <h4>📈 Bonuses:</h4>
-                                <ul style={{ listStyle: 'none', padding: 0 }}>
-                                    {selectedItem.bonusStats.map((bonus, idx) => (
-                                        <li key={idx} style={{ fontSize: '0.85rem' }}>
-                                            {bonus.flat && `+${bonus.flat} ${bonus.stat}`}
-                                            {bonus.percent && `+${bonus.percent}% ${bonus.stat}`}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        <button
-                            onClick={() => setSelectedItem(null)}
-                            style={{ marginTop: '1rem' }}
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
+                <InspectModal item={selectedItem} onClose={() => setSelectedItem(null)} />
             )}
 
         </div>

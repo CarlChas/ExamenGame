@@ -16,26 +16,32 @@ function getRandomRarity(): Rarity {
 }
 
 const types: Type[] = ['weapon', 'armor', 'consumable', 'misc'];
-const possibleStats = ['Strength', 'Dexterity', 'Intelligence', 'Endurance', 'Luck'];
 
 function generateBonusStats(rarity: Rarity): BonusStat[] {
-    if (rarity === 'common') return [];
+    const statsPool = ['Strength', 'Dexterity', 'Intelligence', 'Wisdom', 'Charisma', 'Endurance', 'Luck'];
 
-    const numBonuses = rarity === 'uncommon' ? 1 : 2; // epic+ could even have 2
+    const rarityToBonusCount: Record<Rarity, number> = {
+        common: 0,
+        uncommon: 1,
+        rare: 2,
+        epic: 3,
+        legendary: 4,
+        mythic: 5,
+    };
+
     const bonuses: BonusStat[] = [];
+    const count = rarityToBonusCount[rarity];
 
-    for (let i = 0; i < numBonuses; i++) {
-        const stat = getRandom(possibleStats);
-        const hasFlat = Math.random() < 0.7;    // 70% chance to get flat bonus
-        const hasPercent = Math.random() < 0.5; // 50% chance to get % bonus
+    while (bonuses.length < count) {
+        const stat = getRandom(statsPool);
+        if (bonuses.find(b => b.stat === stat)) continue;
 
         bonuses.push({
             stat,
-            flat: hasFlat ? Math.floor(Math.random() * 10) + 1 : undefined,  // +1 to +10
-            percent: hasPercent ? parseFloat((Math.random() * 5).toFixed(1)) : undefined, // +0.1% to +5.0%
+            flat: Math.floor(Math.random() * 5 + 3),         // 3–7 flat bonus
+            percent: Math.random() < 0.5 ? parseFloat((Math.random() * 5 + 1).toFixed(1)) : undefined, // 1–6%
         });
     }
-
     return bonuses;
 }
 
@@ -43,11 +49,11 @@ function getRandomRank(): Rank {
     const roll = Math.random();
     let cumulative = 0;
     for (const rank of Object.keys(rankChances) as Rank[]) {
-      cumulative += rankChances[rank];
-      if (roll < cumulative) return rank;
+        cumulative += rankChances[rank];
+        if (roll < cumulative) return rank;
     }
     return 'F';
-  }
+}
 
 export function generateRandomLoot(): LootItem {
     const type = getRandom(types);
