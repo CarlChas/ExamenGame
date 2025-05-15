@@ -16,6 +16,7 @@ import {
 import MiniMap from '../map/MiniMap';
 import CanvasArea from './CanvasArea';
 import InspectModal from '../ui/InspectModal';
+import { applyBonuses } from '../../utils/statBonuses';
 
 interface Props {
   character: Character;
@@ -93,8 +94,9 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     });
   }, [player?.xp]);
 
-  const maxHp = player ? calculateMaxHp(player) : 0;
-  const maxMp = player ? calculateMaxMp(player) : 0;
+  const buffedPlayer = player ? applyBonuses(player) : null;
+  const maxHp = buffedPlayer ? calculateMaxHp(buffedPlayer) : 0;
+  const maxMp = buffedPlayer ? calculateMaxMp(buffedPlayer) : 0;
   const nextLevelXp = player ? calculateNextLevelXp(player.level) : 0;
 
   const move = (dir: DirectionKey) => {

@@ -1,5 +1,5 @@
 import { weaponTypes, armorPieces, consumables, miscItems, prefixList, suffixList, materials, rarityChances, rankChances } from './lootData';
-import { LootItem, Rarity, Type, BonusStat, Rank } from './lootTypes';
+import { LootItem, Rarity, Type, BonusStat, Rank, StatName } from './lootTypes';
 
 function getRandom<T>(list: readonly T[]): T {
     return list[Math.floor(Math.random() * list.length)];
@@ -18,7 +18,7 @@ function getRandomRarity(): Rarity {
 const types: Type[] = ['weapon', 'armor', 'consumable', 'misc'];
 
 function generateBonusStats(rarity: Rarity): BonusStat[] {
-    const statsPool = ['Strength', 'Dexterity', 'Intelligence', 'Wisdom', 'Charisma', 'Endurance', 'Luck'];
+    const statsPool: StatName[] = ['Strength', 'Dexterity', 'Intelligence', 'Wisdom', 'Charisma', 'Endurance', 'Luck'];
 
     const rarityToBonusCount: Record<Rarity, number> = {
         common: 0,

@@ -16,9 +16,18 @@ export interface LootItem {
   bonusStats?: BonusStat[];
 }
 
+export type StatName =
+  | 'Strength'
+  | 'Dexterity'
+  | 'Intelligence'
+  | 'Wisdom'
+  | 'Endurance'
+  | 'Charisma'
+  | 'Luck'
+  | 'Divinity';
 
 export interface BonusStat {
-    stat: string;
-    flat?: number;
-    percent?: number;
+  stat: StatName;
+  flat?: number;
+  percent?: number;
 }
