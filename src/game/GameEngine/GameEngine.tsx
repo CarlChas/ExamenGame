@@ -497,27 +497,60 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       </div>
 
       {showInventoryPanel && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0,
-          width: '100vw', height: '100vh',
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          zIndex: 1000,
-          padding: '2rem',
-          overflowY: 'auto'
-        }}>
-          <button onClick={() => setShowInventoryPanel(false)} style={{ float: 'right' }}>❌ Close</button>
-          <Inventory
-            items={inventory}
-            onEquip={equipItem}
-            onUnequip={unequipItem}
-            onRemove={(id) => setInventory(prev => prev.filter(i => i.id !== id))}
-            onInspect={setInspectedItem}
-            isEquipped={isEquipped}
-            onUse={handleUseItem}
-          />
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
+            zIndex: 1000,
+            overflowY: 'auto',
+          }}
+        >
+          {/* X Button */}
+          <button
+            onClick={() => setShowInventoryPanel(false)}
+            aria-label="Close inventory"
+            style={{
+              position: 'fixed', // ✅ anchor to screen, not content
+              top: '1rem',
+              right: '1rem',
+              width: '42px',
+              height: '42px',
+              backgroundColor: '#b00',
+              color: '#fff',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              zIndex: 1100,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            X
+          </button>
+
+          {/* Inventory content */}
+          <div style={{ padding: '2rem', maxWidth: '800px', margin: 'auto', color: 'white' }}>
+            <h2>Inventory</h2>
+            <Inventory
+              items={inventory}
+              onEquip={equipItem}
+              onUnequip={unequipItem}
+              onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
+              onInspect={setInspectedItem}
+              isEquipped={isEquipped}
+              onUse={handleUseItem}
+            />
+          </div>
         </div>
       )}
+
 
       {inspectedItem && (
         <InspectModal item={inspectedItem} onClose={() => setInspectedItem(null)} />

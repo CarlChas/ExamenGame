@@ -17,26 +17,43 @@ const Inventory = ({ items, onRemove, onEquip, onUnequip, isEquipped, onInspect,
             {items.length === 0 && <p style={{ color: '#aaa' }}>Empty</p>}
             <ul style={{ padding: 0, listStyle: 'none' }}>
                 {items.map(item => (
-                    <li key={item.id}>
-                        <strong
-                            onClick={() => onInspect(item)}
-                            style={{ cursor: 'pointer', textDecoration: 'underline', color: 'lightblue' }}
-                        >
-                            {item.name}
-                        </strong>
+                    <li key={item.id} style={{ marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div>
+                                <strong
+                                    onClick={() => onInspect(item)}
+                                    style={{
+                                        cursor: 'pointer',
+                                        textDecoration: 'underline',
+                                        color: 'lightblue',
+                                    }}
+                                >
+                                    {item.name}
+                                </strong>
+                                {isEquipped(item) && (
+                                    <span style={{ color: 'green', marginLeft: '0.5rem' }}>(Equipped)</span>
+                                )}
+                            </div>
 
-                        {isEquipped(item) && <span style={{ color: 'green' }}> (Equipped)</span>}
-
-                        {item.type === 'consumable' ? (
-                            <button onClick={() => onUse(item)}>Use</button>
-                        ) : (
-                            <button onClick={() => isEquipped(item) ? onUnequip(item) : onEquip(item)}>
-                                {isEquipped(item) ? 'Unequip' : 'Equip'}
-                            </button>
-                        )}
-
-                        <button onClick={() => onRemove(item.id)}>🗑️ Remove</button>
+                            <div style={{
+                                display: 'flex',
+                                gap: '0.5rem',
+                                marginTop: '0.3rem',
+                                flexWrap: 'wrap',
+                                justifyContent: 'flex-start'
+                            }}>
+                                {item.type === 'consumable' ? (
+                                    <button onClick={() => onUse(item)}>Use</button>
+                                ) : (
+                                    <button onClick={() => isEquipped(item) ? onUnequip(item) : onEquip(item)}>
+                                        {isEquipped(item) ? 'Unequip' : 'Equip'}
+                                    </button>
+                                )}
+                                <button onClick={() => onRemove(item.id)}>🗑️ Remove</button>
+                            </div>
+                        </div>
                     </li>
+
                 ))}
             </ul>
         </div>
