@@ -278,32 +278,6 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
     }
 }
 
-function connectToNearestGate(seed: BiomeSeed) {
-    if (!seed.gateCoords) return;
-    if (seed.type === 'camp') return false; // ❌ skip camps completely
-
-    const { x: startX, y: startY } = seed.gateCoords;
-
-    const candidates = biomeSeeds.filter(s =>
-        s !== seed && s.gateCoords && s.settlementName
-    );
-
-    if (!candidates.length) return;
-
-    let closest = candidates[0];
-    let minDist = Infinity;
-
-    for (const other of candidates) {
-        const dx = other.gateCoords!.x - startX;
-        const dy = other.gateCoords!.y - startY;
-        const dist = dx * dx + dy * dy;
-        if (dist < minDist) {
-            minDist = dist;
-            closest = other;
-        }
-    }
-}
-
 // === API ===
 export function getMapData(): Record<string, Area> {
     const obj: Record<string, Area> = {};
@@ -372,10 +346,6 @@ export function getArea(x: number, y: number): Area {
         : `${seed.namePrefix} ${seed.nameSuffix}`;
 
     const role: Area['role'] = isGateTile ? 'gate' : isCoreTile ? 'core' : undefined;
-    if (isGateTile && seed && !seed.connectedToGate && seed.type !== 'camp') {
-        connectToNearestGate(seed);
-        seed.connectedToGate = true;
-    }
 
     if (role === 'gate') {
         console.log('🚪 This tile is a GATE:', key, 'Name:', name);
