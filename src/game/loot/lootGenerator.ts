@@ -64,37 +64,91 @@ export function generateRandomLoot(): LootItem {
 
     let baseName = '';
     let material = '';
+    let baseValue = 10;
 
     if (type === 'weapon') {
         material = getRandom(materials);
         const weapon = getRandom(weaponTypes);
         baseName = `${prefix ? prefix + ' ' : ''}${material} ${weapon}${suffix ? ' ' + suffix : ''}`;
-    } else if (type === 'armor') {
+        baseValue += Math.floor(Math.random() * 50) + 25;
+
+        return {
+            id: Date.now().toString(),
+            name: baseName,
+            type,
+            rarity,
+            rank,
+            material,
+            value: baseValue,
+            bonusStats: generateBonusStats(rarity),
+        };
+    }
+
+    if (type === 'armor') {
         material = getRandom(materials);
         const armor = getRandom(armorPieces);
         baseName = `${prefix ? prefix + ' ' : ''}${material} ${armor}${suffix ? ' ' + suffix : ''}`;
-    } else if (type === 'consumable') {
-        baseName = `${prefix ? prefix + ' ' : ''}${getRandom(consumables)}${suffix ? ' ' + suffix : ''}`;
-    } else {
-        baseName = `${prefix ? prefix + ' ' : ''}${getRandom(miscItems)}${suffix ? ' ' + suffix : ''}`;
+        baseValue += Math.floor(Math.random() * 50) + 25;
+
+        return {
+            id: Date.now().toString(),
+            name: baseName,
+            type,
+            rarity,
+            rank,
+            material,
+            value: baseValue,
+            bonusStats: generateBonusStats(rarity),
+        };
     }
 
-    // Value calculation
-    let baseValue = 10;
-    switch (type) {
-        case 'weapon':
-        case 'armor':
-            baseValue += Math.floor(Math.random() * 50) + 25;
-            break;
-        case 'consumable':
-            baseValue += Math.floor(Math.random() * 20) + 5;
-            break;
-        case 'misc':
-            baseValue += Math.floor(Math.random() * 15) + 5;
-            break;
+    if (type === 'consumable') {
+        const effectTypes = ['heal', 'mana'] as const;
+        const effectType = getRandom(effectTypes);
+        const usePercent = Math.random() < 0.5;
+
+        const effect = usePercent
+            ? { type: effectType, percent: Math.floor(Math.random() * 20) + 10 }
+            : { type: effectType, amount: Math.floor(Math.random() * 25) + 15 };
+
+        const value = usePercent
+            ? Math.floor((effect.percent ?? 10) * 1.5)
+            : Math.floor((effect.amount ?? 15) * 1.2);
+
+        // 🔀 80% chance to use dynamic naming, 20% chance to use predefined consumables
+        const useCustomName = Math.random() > 0.2;
+
+        let effectName = '';
+
+        if (useCustomName) {
+            effectName = getRandom(consumables); // from lootData.ts
+        } else {
+            effectName =
+                effectType === 'heal'
+                    ? usePercent
+                        ? 'Elixir of Vitality'
+                        : 'Health Potion'
+                    : usePercent
+                        ? 'Elixir of Focus'
+                        : 'Mana Potion';
+        }
+
+        const baseName = `${prefix ? prefix + ' ' : ''}${effectName}${suffix ? ' ' + suffix : ''}`;
+
+        return {
+            id: Date.now().toString(),
+            name: baseName,
+            type,
+            rarity,
+            rank,
+            value,
+            effect,
+        };
     }
 
-    const bonusStats = generateBonusStats(rarity);
+    // misc
+    baseName = `${prefix ? prefix + ' ' : ''}${getRandom(miscItems)}${suffix ? ' ' + suffix : ''}`;
+    baseValue += Math.floor(Math.random() * 15) + 5;
 
     return {
         id: Date.now().toString(),
@@ -102,8 +156,6 @@ export function generateRandomLoot(): LootItem {
         type,
         rarity,
         rank,
-        material,
         value: baseValue,
-        bonusStats,
     };
 }

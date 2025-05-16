@@ -87,11 +87,20 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       }
 
       if (leveledUp) {
+        // TEMP: set to raw max (pre-bonus)
         updated.currentHp = calculateMaxHp(updated);
         updated.currentMp = calculateMaxMp(updated);
+
+        // Apply bonuses and then clamp
+        const final = applyBonuses(updated);
+        const finalMaxHp = calculateMaxHp(final);
+        const finalMaxMp = calculateMaxMp(final);
+
+        updated.currentHp = Math.min(updated.currentHp, finalMaxHp);
+        updated.currentMp = Math.min(updated.currentMp, finalMaxMp);
       }
 
-      return updated;
+      return applyBonuses(updated);
     });
   }, [player?.xp]);
 
@@ -401,6 +410,29 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     return false;
   };
 
+  const handleUseItem = (item: LootItem) => {
+    if (!player || !item.effect) return;
+
+    let updated = { ...player };
+    const maxHp = calculateMaxHp(applyBonuses(updated));
+    const maxMp = calculateMaxMp(applyBonuses(updated));
+
+    let restoredAmount = 0;
+
+    if (item.effect.type === 'heal') {
+      restoredAmount = item.effect.amount ?? Math.floor((item.effect.percent ?? 0) * maxHp / 100);
+      updated.currentHp = Math.min(updated.currentHp + restoredAmount, maxHp);
+      setDialog(`${item.name} restores ${restoredAmount} HP!`);
+    } else if (item.effect.type === 'mana') {
+      restoredAmount = item.effect.amount ?? Math.floor((item.effect.percent ?? 0) * maxMp / 100);
+      updated.currentMp = Math.min(updated.currentMp + restoredAmount, maxMp);
+      setDialog(`${item.name} restores ${restoredAmount} MP!`);
+    }
+
+    setInventory((prev) => prev.filter((i) => i.id !== item.id));
+    setPlayer(applyBonuses(updated));
+  };
+
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
       {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
@@ -466,6 +498,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
             onRemove={(id) => setInventory(prev => prev.filter(i => i.id !== id))}
             onInspect={setInspectedItem}
             isEquipped={isEquipped}
+            onUse={handleUseItem}
           />
         </div>
       )}
@@ -495,6 +528,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           onEquip={equipItem}
           onUnequip={unequipItem}
           isEquipped={isEquipped}
+          onUse={handleUseItem}
         />
       </div>
     </div>

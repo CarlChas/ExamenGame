@@ -11,9 +11,14 @@ export interface LootItem {
   rarity: Rarity;
   rank: Rank;
   type: Type;
-  material: string;
+  material?: string;
   value: number;
   bonusStats?: BonusStat[];
+  effect?: {
+    type: 'heal' | 'mana';
+    amount?: number;
+    percent?: number;
+  };
 }
 
 export type StatName =

@@ -28,6 +28,15 @@ const InspectModal = ({ item, onClose }: Props) => {
             <p>Value: {item.value}g</p>
             {item.rank && <p>Rank: {item.rank}</p>}
 
+            {item.effect && (
+                <p>
+                    {item.effect.amount
+                        ? `${item.effect.type === 'heal' ? 'Heals' : 'Restores'} ${item.effect.amount} ${item.effect.type === 'heal' ? 'HP' : 'MP'}`
+                        : `${item.effect.type === 'heal' ? 'Heals' : 'Restores'} ${item.effect.percent}% ${item.effect.type === 'heal' ? 'HP' : 'MP'}`}
+                </p>
+            )}
+
+
             {item.bonusStats && item.bonusStats.length > 0 && (
                 <>
                     <h4>Bonus Stats</h4>

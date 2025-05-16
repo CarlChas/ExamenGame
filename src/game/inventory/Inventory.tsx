@@ -7,9 +7,10 @@ interface Props {
     onEquip: (item: LootItem) => void;
     onUnequip: (item: LootItem) => void;
     isEquipped: (item: LootItem) => boolean;
+    onUse: (item: LootItem) => void;
 }
 
-const Inventory = ({ items, onRemove, onEquip, onUnequip, isEquipped, onInspect }: Props) => {
+const Inventory = ({ items, onRemove, onEquip, onUnequip, isEquipped, onInspect, onUse }: Props) => {
     return (
         <div style={{ marginTop: '2rem', color: 'white' }}>
             <h4>Inventory</h4>
@@ -25,14 +26,18 @@ const Inventory = ({ items, onRemove, onEquip, onUnequip, isEquipped, onInspect 
                         </strong>
 
                         {isEquipped(item) && <span style={{ color: 'green' }}> (Equipped)</span>}
-                        <button onClick={() => isEquipped(item) ? onUnequip(item) : onEquip(item)}>
-                            {isEquipped(item) ? 'Unequip' : 'Equip'}
-                        </button>
+
+                        {item.type === 'consumable' ? (
+                            <button onClick={() => onUse(item)}>Use</button>
+                        ) : (
+                            <button onClick={() => isEquipped(item) ? onUnequip(item) : onEquip(item)}>
+                                {isEquipped(item) ? 'Unequip' : 'Equip'}
+                            </button>
+                        )}
+
                         <button onClick={() => onRemove(item.id)}>🗑️ Remove</button>
                     </li>
-
                 ))}
-
             </ul>
         </div>
     );
