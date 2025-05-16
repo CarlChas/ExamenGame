@@ -135,6 +135,7 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
                         currentHp={enemyHp}
                         maxHp={enemy.maxHp}
                         lastMove={enemyMove ?? undefined}
+                        level={enemy.level}
                     />
                 </div>
             </div>

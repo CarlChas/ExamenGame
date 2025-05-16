@@ -5,4 +5,5 @@ export interface Enemy {
     currentHp: number;
     attack: number;
     xpReward: number;
+    level: number;
   }  

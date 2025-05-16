@@ -3,11 +3,20 @@ interface EnemyPanelProps {
     currentHp: number;
     maxHp: number;
     lastMove?: string;
+    level?: number;
 }
 
-const EnemyPanel = ({ name, currentHp, maxHp, lastMove }: EnemyPanelProps) => (
+const EnemyPanel = ({ name, currentHp, maxHp, lastMove, level }: EnemyPanelProps) => (
     <div style={{ background: '#222', padding: '1rem', borderRadius: '8px' }}>
-        <h4>{name}</h4>
+        <h3>
+            {name}
+            {level !== undefined && (
+                <span style={{ fontSize: '0.85rem', marginLeft: '0.4rem', color: '#aaa' }}>
+                    (Lv. {level})
+                </span>
+            )}
+        </h3>
+
         <div style={{ background: '#444', borderRadius: 4, marginBottom: '0.5rem' }}>
             <div style={{
                 background: 'crimson',

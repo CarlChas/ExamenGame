@@ -1,6 +1,7 @@
 import { Area } from '../map/map';
 import { Character } from '../types/characterTypes';
 import { Dispatch, SetStateAction, useEffect, useRef } from 'react';
+import { getRandomEnemyForBiomeAndTheme } from '../../combat/enemies';
 
 interface Props {
   area: Area;
@@ -8,11 +9,12 @@ interface Props {
   setDialog: Dispatch<SetStateAction<string | null>>;
   setInCombat: Dispatch<SetStateAction<boolean>>;
   setEnemyInCombat: Dispatch<SetStateAction<any>>;
-  onHealPlayer: (npcName: string) => void; // Update prop type
+  onHealPlayer: (npcName: string) => void;
 }
 
 const CanvasArea = ({
   area,
+  player,
   setDialog,
   setInCombat,
   setEnemyInCombat,
@@ -118,7 +120,7 @@ const CanvasArea = ({
           if (npc.type === 'inn' || npc.type === 'tavern') {
             onHealPlayer(npc.name);
           } else {
-             setDialog(npc.dialog); // Set default dialog for other NPCs
+            setDialog(npc.dialog); // Set default dialog for other NPCs
           }
           return;
         }
@@ -127,13 +129,28 @@ const CanvasArea = ({
       for (let enemy of area.enemies ?? []) {
         const dx = x - (enemy.x ?? 0);
         const dy = y - (enemy.y ?? 0);
-        const dist = Math.sqrt(dx * dx + dy + dy);
+        const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 20) {
-          setEnemyInCombat(enemy);
+          const generated = getRandomEnemyForBiomeAndTheme(
+            area.type || 'wilderness',  // fallback if type is undefined
+            area.theme || 'undead',     // fallback
+            player.level                // scaling based on player level
+          );
+
+          // Preserve original enemy's sprite and position
+          setEnemyInCombat({
+            ...generated,
+            sprite: enemy.sprite,
+            x: enemy.x,
+            y: enemy.y,
+            currentHp: generated.maxHp,
+          });
+
           setInCombat(true);
           return;
         }
       }
+
 
       if (area.event) {
         setDialog(area.event);
