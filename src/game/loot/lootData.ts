@@ -40,7 +40,6 @@ export const rarityChances: Record<Rarity, number> = {
     mythic: 0.01,
 };
 
-
 export const rankChances: Record<Rank, number> = {
     F: 0.25,
     E: 0.2,

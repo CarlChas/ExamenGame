@@ -253,7 +253,9 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }));
 
     const dropChance = 0.3;
-    const loot = Math.random() < dropChance ? generateRandomLoot() : null;
+    const loot = Math.random() < dropChance && player
+      ? generateRandomLoot(player.level)
+      : null;
 
     if (loot) {
       setInventory(prev => [...prev, loot]);

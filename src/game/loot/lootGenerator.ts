@@ -17,30 +17,62 @@ function getRandomRarity(): Rarity {
 
 const types: Type[] = ['weapon', 'armor', 'consumable', 'misc'];
 
-function generateBonusStats(rarity: Rarity): BonusStat[] {
-    const statsPool: StatName[] = ['Strength', 'Dexterity', 'Intelligence', 'Wisdom', 'Charisma', 'Endurance', 'Luck'];
+function generateBonusStats(rarity: Rarity, level: number): BonusStat[] {
+    const statsPool: StatName[] = [
+        'Strength',
+        'Dexterity',
+        'Intelligence',
+        'Wisdom',
+        'Charisma',
+        'Endurance',
+        'Luck',
+    ];
 
     const rarityToBonusCount: Record<Rarity, number> = {
-        common: 0,
-        uncommon: 1,
-        rare: 2,
-        epic: 3,
-        legendary: 4,
-        mythic: 5,
+        common: 1,
+        uncommon: Math.random() < 0.5 ? 2 : 1,
+        rare: Math.random() < 0.5 ? 3 : 2,
+        epic: Math.random() < 0.5 ? 4 : 3,
+        legendary: Math.random() < 0.5 ? 5 : 4,
+        mythic: Math.random() < 0.5 ? 6 : 5,
+    };
+
+    const rarityFlatScale: Record<Rarity, number> = {
+        common: 0.2,
+        uncommon: 0.4,
+        rare: 0.6,
+        epic: 0.8,
+        legendary: 1.0,
+        mythic: 1.3,
+    };
+
+    const rarityPercentCap: Record<Rarity, number> = {
+        common: 3,
+        uncommon: 5,
+        rare: 7,
+        epic: 9,
+        legendary: 12,
+        mythic: 15,
     };
 
     const bonuses: BonusStat[] = [];
     const count = rarityToBonusCount[rarity];
+    const flatScale = rarityFlatScale[rarity];
+    const percentCap = rarityPercentCap[rarity];
 
     while (bonuses.length < count) {
         const stat = getRandom(statsPool);
-        if (bonuses.find(b => b.stat === stat)) continue;
+        if (bonuses.find((b) => b.stat === stat)) continue;
 
-        bonuses.push({
-            stat,
-            flat: Math.floor(Math.random() * 5 + 3),         // 3–7 flat bonus
-            percent: Math.random() < 0.5 ? parseFloat((Math.random() * 5 + 1).toFixed(1)) : undefined, // 1–6%
-        });
+        const flat = Math.floor(level * flatScale + Math.random() * 3); // ±0–2
+
+        let percent: number | undefined;
+        if (Math.random() < 0.5) {
+            const scaledPercent = level * 0.02 + Math.random(); // 2% per 100 levels
+            percent = parseFloat(Math.min(scaledPercent, percentCap).toFixed(2));
+        }
+
+        bonuses.push({ stat, flat, percent });
     }
     return bonuses;
 }
@@ -55,7 +87,7 @@ function getRandomRank(): Rank {
     return 'F';
 }
 
-export function generateRandomLoot(): LootItem {
+export function generateRandomLoot(playerLevel: number): LootItem {
     const type = getRandom(types);
     const rarity = getRandomRarity();
     const rank = getRandomRank();
@@ -65,6 +97,8 @@ export function generateRandomLoot(): LootItem {
     let baseName = '';
     let material = '';
     let baseValue = 10;
+
+    const lootLevel = playerLevel;
 
     if (type === 'weapon') {
         material = getRandom(materials);
@@ -80,7 +114,7 @@ export function generateRandomLoot(): LootItem {
             rank,
             material,
             value: baseValue,
-            bonusStats: generateBonusStats(rarity),
+            bonusStats: generateBonusStats(rarity, lootLevel),
         };
     }
 
@@ -98,7 +132,7 @@ export function generateRandomLoot(): LootItem {
             rank,
             material,
             value: baseValue,
-            bonusStats: generateBonusStats(rarity),
+            bonusStats: generateBonusStats(rarity, lootLevel),
         };
     }
 
