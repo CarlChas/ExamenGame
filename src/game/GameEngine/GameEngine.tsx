@@ -509,12 +509,11 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
             overflowY: 'auto',
           }}
         >
-          {/* X Button */}
           <button
             onClick={() => setShowInventoryPanel(false)}
             aria-label="Close inventory"
             style={{
-              position: 'fixed', // ✅ anchor to screen, not content
+              position: 'fixed',
               top: '1rem',
               right: '1rem',
               width: '42px',
@@ -535,22 +534,72 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
             X
           </button>
 
-          {/* Inventory content */}
-          <div style={{ padding: '2rem', maxWidth: '800px', margin: 'auto', color: 'white' }}>
-            <h2>Inventory</h2>
-            <Inventory
-              items={inventory}
-              onEquip={equipItem}
-              onUnequip={unequipItem}
-              onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
-              onInspect={setInspectedItem}
-              isEquipped={isEquipped}
-              onUse={handleUseItem}
-            />
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              gap: '4rem',
+              padding: '2rem',
+              flexWrap: 'wrap',
+              color: 'white',
+            }}
+          >
+            <div>
+              <h3 style={{ textAlign: 'center' }}>🧍 Equipped Gear</h3>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateAreas: `
+              ". helmet ."
+              "shield chest weapon"
+              ". leggings ."
+              ". boots ."
+            `,
+                  gridTemplateColumns: '1fr 1fr 1fr',
+                  gap: '1rem',
+                  justifyItems: 'center',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ gridArea: 'helmet' }}>
+                  {player?.equipment.armor.helmet?.name || '🪖 Helmet'}
+                </div>
+                <div style={{ gridArea: 'shield' }}>
+                  {player?.equipment.armor.shield?.name || '🛡 Shield'}
+                </div>
+                <div style={{ gridArea: 'chest' }}>
+                  {player?.equipment.armor.chest?.name || '🧥 Chestplate'}
+                </div>
+                <div style={{ gridArea: 'weapon' }}>
+                  {player?.equipment.weapon1?.name || '🗡 Weapon'}
+                </div>
+                <div style={{ gridArea: 'leggings' }}>
+                  {player?.equipment.armor.legs?.name || '👖 Leggings'}
+                </div>
+                <div style={{ gridArea: 'boots' }}>
+                  {player?.equipment.armor.boots?.name || '🥾 Boots'}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3>🎒 Inventory</h3>
+              <Inventory
+                items={inventory}
+                onEquip={equipItem}
+                onUnequip={unequipItem}
+                onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
+                onInspect={setInspectedItem}
+                isEquipped={isEquipped}
+                onUse={handleUseItem}
+              />
+            </div>
           </div>
         </div>
       )}
-
 
       {inspectedItem && (
         <InspectModal item={inspectedItem} onClose={() => setInspectedItem(null)} />
