@@ -20,17 +20,15 @@ export type SettlementType =
     | 'wilderness'
     | 'default';
 
-type NPCCountLimit = number | [number, number];
+type NPCCountRange = [number, number];
+type NPCCountLimit = number | NPCCountRange;
 
 const maxNPCsPerType: Partial<Record<SettlementType, Partial<Record<NPCTemplateType, NPCCountLimit>>>> = {
-    village: { market: [1, 3], guard: 2, inn: 1 },
-    town: { market: [2, 4], guard: 2, blacksmith: 1, inn: 1, tavern: 1 },
-    city: { market: [3, 5], guard: 4, oracle: 2, guild: 1 },
-    camp: { guard: 0 },
+    village: { market: [1, 3], guard: [1, 2], inn: 1 },
+    town: { market: [2, 4], guard: [1, 3], blacksmith: 1 },
+    city: { market: [3, 5], guard: [2, 4], oracle: [0, 1], guild: [1, 2] },
+    camp: { guard: [0, 1] },
 };
-
-const defaultMaxPerType = 1;
-
 
 const npcTemplates = {
     oracle: { names: ['Oracle', 'Seer', 'Starwatcher'], dialogs: ['The stars murmur truths...', 'Visions come and go...', 'Destiny bends, but never breaks.'] },
@@ -83,44 +81,52 @@ export function generateNPCsForArea(
     areaType: SettlementType,
     xBounds: [number, number],
     yBounds: [number, number],
-    existingNPCs: NPC[] = [] // Pass existing ones if already present
+    existingNPCs: NPC[] = []
 ): NPC[] {
     const [minNpcs, maxNpcs] = npcCountBySettlement[areaType] || npcCountBySettlement.default;
     const targetNpcCount = getRandomInt(minNpcs, maxNpcs);
     const allowedTypes = allowedTypesBySettlement[areaType] || allowedTypesBySettlement.default;
-    const maxPerType = maxNPCsPerType[areaType] || {};
+    const typeLimits: Partial<Record<NPCTemplateType, NPCCountLimit>> =
+        maxNPCsPerType[areaType] ?? ({} as Partial<Record<NPCTemplateType, NPCCountLimit>>);
+
+    const defaultLimit: NPCCountRange = [0, 1];
 
     const npcs: NPC[] = [...existingNPCs];
-    const typeCounts: Record<string, number> = {};
+    const typeCounts: Partial<Record<NPCTemplateType, number>> = {};
 
-    // Count already existing NPCs
-    for (const npc of npcs) {
-        typeCounts[npc.type] = (typeCounts[npc.type] || 0) + 1;
+    // Step 1: Pre-fill required minimums
+    for (const type of allowedTypes) {
+        const raw = typeLimits[type] ?? defaultLimit;
+        const [minCount] = Array.isArray(raw) ? raw : [raw, raw];
+
+        for (let i = 0; i < minCount; i++) {
+            const x = getRandomInt(xBounds[0], xBounds[1]);
+            const y = getRandomInt(yBounds[0], yBounds[1]);
+            npcs.push(generateSpecificNPC(type, x, y));
+            typeCounts[type] = (typeCounts[type] || 0) + 1;
+        }
     }
 
+    // Step 2: Random-fill up to max per type and total target
     let attempts = 0;
     const maxAttempts = 100;
 
     while (npcs.length < targetNpcCount && attempts < maxAttempts) {
         const type = getRandom(allowedTypes);
-        const current = typeCounts[type] || 0;
-        const rawLimit = maxPerType[type as NPCTemplateType] ?? defaultMaxPerType;
+        const raw = typeLimits[type] ?? defaultLimit;
+        const [maxCount] = Array.isArray(raw) ? raw : [raw, raw];
 
-        const maxAllowed = Array.isArray(rawLimit)
-            ? getRandomInt(rawLimit[0], rawLimit[1])
-            : rawLimit;
-
-        if (current < maxAllowed) {
+        const currentCount = typeCounts[type] || 0;
+        if (currentCount < maxCount) {
             const x = getRandomInt(xBounds[0], xBounds[1]);
             const y = getRandomInt(yBounds[0], yBounds[1]);
-
-            const npc = generateSpecificNPC(type, x, y);
-            npcs.push(npc);
-            typeCounts[type] = current + 1;
+            npcs.push(generateSpecificNPC(type, x, y));
+            typeCounts[type] = currentCount + 1;
         }
 
         attempts++;
     }
+
 
     return npcs;
 }
