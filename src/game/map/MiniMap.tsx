@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getMapData /*, getRoadTiles*/ } from './map';
-
-// const roads = getRoadTiles(); // Set<string>
+import { getMapData } from './map';
 
 interface Props {
     currentX: number;
@@ -9,7 +7,6 @@ interface Props {
 }
 
 const TILE_SIZE = 24;
-const WALL_THICKNESS = 4;
 const VIEW_WIDTH = 15;
 const VIEW_HEIGHT = 15;
 
@@ -26,7 +23,6 @@ const typeColors: Record<string, string> = {
     undead: '#555577',
     elemental: '#cf9f3f',
     default: '#666',
-    road: '#a07d56',
 };
 
 const getAreaEmoji = (type?: string): string => {
@@ -82,7 +78,6 @@ const MiniMap = ({ currentX, currentY }: Props) => {
         }
     };
 
-    const drawnWalls = new Set<string>();
 
     return (
         <div style={{
@@ -127,7 +122,6 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                         const area = map[key];
                         const isCurrent = x === currentX && y === currentY;
 
-                        // const isRoad = roads.has(key);
                         const isGate = area?.role === 'gate';
                         const isPlayer = isCurrent;
 
@@ -165,63 +159,6 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                                 {emoji}
                             </div>
                         );
-                    })}
-
-                    {/* Walls */}
-                    {coords.flatMap(({ x, y }) => {
-                        const area = map[`${x},${y}`];
-                        if (!area?.blocked) return [];
-
-                        const wallKey = (dir: string) => `${dir}-${x},${y}`;
-                        const walls = [];
-
-                        const wallStyle = (pos: Partial<React.CSSProperties>): React.CSSProperties => ({
-                            position: 'absolute',
-                            backgroundColor: 'red',
-                            ...pos
-                        });
-
-                        if (area.blocked.north && !drawnWalls.has(wallKey('north'))) {
-                            drawnWalls.add(wallKey('north'));
-                            walls.push(<div key={wallKey('north')} style={wallStyle({
-                                left: x * TILE_SIZE - 1,
-                                top: y * TILE_SIZE - WALL_THICKNESS / 2,
-                                width: TILE_SIZE + 2,
-                                height: WALL_THICKNESS,
-                            })} />);
-                        }
-
-                        if (area.blocked.south && !drawnWalls.has(wallKey('south'))) {
-                            drawnWalls.add(wallKey('south'));
-                            walls.push(<div key={wallKey('south')} style={wallStyle({
-                                left: x * TILE_SIZE - 1,
-                                top: (y + 1) * TILE_SIZE - WALL_THICKNESS / 2,
-                                width: TILE_SIZE + 2,
-                                height: WALL_THICKNESS,
-                            })} />);
-                        }
-
-                        if (area.blocked.west && !drawnWalls.has(wallKey('west'))) {
-                            drawnWalls.add(wallKey('west'));
-                            walls.push(<div key={wallKey('west')} style={wallStyle({
-                                top: y * TILE_SIZE - 1,
-                                left: x * TILE_SIZE - WALL_THICKNESS / 2,
-                                width: WALL_THICKNESS,
-                                height: TILE_SIZE + 2,
-                            })} />);
-                        }
-
-                        if (area.blocked.east && !drawnWalls.has(wallKey('east'))) {
-                            drawnWalls.add(wallKey('east'));
-                            walls.push(<div key={wallKey('east')} style={wallStyle({
-                                top: y * TILE_SIZE - 1,
-                                left: (x + 1) * TILE_SIZE - WALL_THICKNESS / 2,
-                                width: WALL_THICKNESS,
-                                height: TILE_SIZE + 2,
-                            })} />);
-                        }
-
-                        return walls;
                     })}
                 </div>
             </div>
