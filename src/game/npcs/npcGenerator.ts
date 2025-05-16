@@ -20,12 +20,13 @@ export type SettlementType =
     | 'wilderness'
     | 'default';
 
-const maxNPCsPerType: Partial<Record<SettlementType, Partial<Record<NPCTemplateType, number>>>> = {
-    village: { market: 1, guard: 2, inn: 1 },
-    town: { market: 2, guard: 2, blacksmith: 1 },
-    city: { market: 3, guard: 3, oracle: 1, guild: 1 },
-    camp: { guard: 1 },
-    // Others can inherit a default if not defined
+type NPCCountLimit = number | [number, number];
+
+const maxNPCsPerType: Partial<Record<SettlementType, Partial<Record<NPCTemplateType, NPCCountLimit>>>> = {
+    village: { market: [1, 3], guard: 2, inn: 1 },
+    town: { market: [2, 4], guard: 2, blacksmith: 1, inn: 1, tavern: 1 },
+    city: { market: [3, 5], guard: 4, oracle: 2, guild: 1 },
+    camp: { guard: 0 },
 };
 
 const defaultMaxPerType = 1;
@@ -60,10 +61,10 @@ const allowedTypesBySettlement: Record<SettlementType, readonly NPCTemplateType[
 };
 
 const npcCountBySettlement: Record<SettlementType, [number, number]> = {
-    village: [2, 4],
-    town: [4, 7],
-    city: [6, 10],
-    camp: [1, 2],
+    village: [4, 7],
+    town: [8, 11],
+    city: [12, 20],
+    camp: [1, 3],
     dungeon: [1, 2],
     corrupted: [1, 2],
     wilderness: [1, 1],
