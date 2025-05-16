@@ -24,7 +24,6 @@ export const normalizeCharacter = (char: Character): Character => {
         back: char.equipment?.armor?.back ?? undefined,
         legs: char.equipment?.armor?.legs ?? undefined,
         boots: char.equipment?.armor?.boots ?? undefined,
-        shield: char.equipment?.armor?.shield ?? undefined
       },
       necklace: char.equipment?.necklace ?? undefined,
       belt: char.equipment?.belt ?? undefined,

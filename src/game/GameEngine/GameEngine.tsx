@@ -43,6 +43,11 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const hasSyncedPlayerData = useRef(false);
   const skipNextXpEffect = useRef(false);
 
+  const isTwoHandedWeapon = (item: LootItem): boolean => {
+    const name = item.name.toLowerCase();
+    return ['greatsword', 'greataxe', 'bow'].some(type => name.includes(type));
+  };
+
 
   useEffect(() => {
     if (!hasLoadedOnce.current) {
@@ -352,8 +357,31 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       removeFromInventory();
 
       if (item.type === 'weapon') {
-        pushOldToInventory(updated.equipment.weapon1);
-        updated.equipment.weapon1 = item;
+        const isShield = item.name.toLowerCase().includes('shield');
+        const isTwoHanded = isTwoHandedWeapon(item); // ✅ USE IT HERE
+
+        if (isShield) {
+          const mainWeapon = updated.equipment.weapon1;
+          if (mainWeapon && isTwoHandedWeapon(mainWeapon)) {
+            pushOldToInventory(mainWeapon);
+            updated.equipment.weapon1 = undefined;
+            setDialog("Your two-handed weapon was unequipped to make room for the shield.");
+          }
+
+          pushOldToInventory(updated.equipment.weapon2);
+          updated.equipment.weapon2 = item;
+        } else {
+          const offhand = updated.equipment.weapon2;
+          if (offhand && offhand.name.toLowerCase().includes('shield') && isTwoHanded) {
+            pushOldToInventory(offhand);
+            updated.equipment.weapon2 = undefined;
+            setDialog("Your shield was unequipped to wield the two-handed weapon.");
+          }
+
+          pushOldToInventory(updated.equipment.weapon1);
+          updated.equipment.weapon1 = item;
+        }
+
       } else if (item.type === 'armor') {
         const slot: ArmorSlot | null =
           item.name.toLowerCase().includes('helmet') ? 'helmet' :
@@ -388,8 +416,11 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       if (item.type === 'weapon') {
         if (updated.equipment.weapon1?.id === item.id) {
           updated.equipment.weapon1 = undefined;
+        } else if (updated.equipment.weapon2?.id === item.id) {
+          updated.equipment.weapon2 = undefined;
         }
-      } else if (item.type === 'armor') {
+      }
+      else if (item.type === 'armor') {
         const slot: ArmorSlot | null = item.name.toLowerCase().includes('helmet') ? 'helmet' :
           item.name.toLowerCase().includes('chest') ? 'chest' :
             item.name.toLowerCase().includes('back') ? 'back' :
@@ -408,9 +439,11 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   const isEquipped = (item: LootItem): boolean => {
     if (!player || !player.equipment) return false;
-
     if (item.type === 'weapon') {
-      return player.equipment.weapon1?.id === item.id;
+      return (
+        player.equipment.weapon1?.id === item.id ||
+        player.equipment.weapon2?.id === item.id
+      );
     }
 
     if (
@@ -421,7 +454,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     ) {
       return true;
     }
-
 
     return false;
   };
@@ -553,7 +585,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
                   display: 'grid',
                   gridTemplateAreas: `
               ". helmet ."
-              "shield chest weapon"
+              "weapon chest weapon2"
               ". leggings ."
               ". boots ."
             `,
@@ -567,14 +599,15 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
                 <div style={{ gridArea: 'helmet' }}>
                   {player?.equipment.armor.helmet?.name || '🪖 Helmet'}
                 </div>
-                <div style={{ gridArea: 'shield' }}>
-                  {player?.equipment.armor.shield?.name || '🛡 Shield'}
+                <div style={{ gridArea: 'weapon' }}>
+                  {player?.equipment.weapon1?.name || '🗡 Weapon'}
                 </div>
+
                 <div style={{ gridArea: 'chest' }}>
                   {player?.equipment.armor.chest?.name || '🧥 Chestplate'}
                 </div>
-                <div style={{ gridArea: 'weapon' }}>
-                  {player?.equipment.weapon1?.name || '🗡 Weapon'}
+                <div style={{ gridArea: 'weapon2' }}>
+                  {player?.equipment.weapon2?.name || '🛡 Off-Hand'}
                 </div>
                 <div style={{ gridArea: 'leggings' }}>
                   {player?.equipment.armor.legs?.name || '👖 Leggings'}

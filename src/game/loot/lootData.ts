@@ -4,6 +4,8 @@ export const materials = ['Wooden', 'Copper', 'Iron', 'Steel', 'Obsidian', 'Magi
 
 export const weaponTypes = ['Sword', 'Axe', 'Dagger', 'Bow', 'Staff', 'Wand', 'Greataxe', 'Greatsword', 'Rapier', 'Shield'];
 
+export const twoHandedWeaponTypes = ['Bow', 'Greataxe', 'Greatsword'];
+
 export const armorPieces = ['Helmet', 'Chestplate', 'Leggings', 'Boots', 'Gauntlets', 'Shield'];
 
 export const consumables = ['Health Potion', 'Mana Potion', 'Elixir', 'Antidote'];

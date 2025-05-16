@@ -24,7 +24,6 @@ export interface Character {
     weapon1?: LootItem;
     weapon2?: LootItem;
     armor: {
-      shield?: LootItem;
       helmet?: LootItem;
       chest?: LootItem;
       back?: LootItem;
