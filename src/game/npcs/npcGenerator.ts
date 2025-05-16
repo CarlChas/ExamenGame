@@ -104,7 +104,11 @@ export function generateNPCsForArea(
     while (npcs.length < targetNpcCount && attempts < maxAttempts) {
         const type = getRandom(allowedTypes);
         const current = typeCounts[type] || 0;
-        const maxAllowed = maxPerType[type as NPCTemplateType] ?? defaultMaxPerType;
+        const rawLimit = maxPerType[type as NPCTemplateType] ?? defaultMaxPerType;
+
+        const maxAllowed = Array.isArray(rawLimit)
+            ? getRandomInt(rawLimit[0], rawLimit[1])
+            : rawLimit;
 
         if (current < maxAllowed) {
             const x = getRandomInt(xBounds[0], xBounds[1]);
