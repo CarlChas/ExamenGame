@@ -142,6 +142,7 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat, onFlee }: Props) => 
                         level={player.level}
                         xp={player.xp}
                         nextLevelXp={player.level * 100}
+                        gold={player.gold}
                     />
                 </div>
 

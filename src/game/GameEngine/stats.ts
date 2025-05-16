@@ -15,6 +15,7 @@ export const normalizeCharacter = (char: Character): Character => {
 
   return {
     ...char,
+    gold: char.gold ?? 0,
     equipment: {
       weapon1: char.equipment?.weapon1 ?? undefined,
       weapon2: char.equipment?.weapon2 ?? undefined,

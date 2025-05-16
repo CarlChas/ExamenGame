@@ -192,7 +192,6 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         };
       }
 
-
       if (updatedChar) {
         let playerData = applyBonuses(normalizeCharacter(updatedChar));
         setPlayer(applyBonuses(playerData));
@@ -481,6 +480,24 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     setPlayer(applyBonuses(updated));
   };
 
+  const handleSell = (item: LootItem) => {
+
+    if (isEquipped(item)) {
+      setDialog("You must unequip the item before selling it.");
+      return;
+    }
+
+    const value = item.value ?? 0;
+
+    setInventory((prev) => prev.filter((i) => i.id !== item.id));
+    setPlayer((prev) =>
+      prev ? { ...prev, gold: (prev.gold ?? 0) + value } : null
+    );
+
+    setDialog(`${item.name} sold for ${value} gold.`);
+  };
+
+
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
       {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
@@ -628,6 +645,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
                 onInspect={setInspectedItem}
                 isEquipped={isEquipped}
                 onUse={handleUseItem}
+                onSell={handleSell}
               />
             </div>
           </div>
@@ -651,6 +669,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           level={player.level}
           xp={player.xp}
           nextLevelXp={nextLevelXp}
+          gold={player.gold}
         />
         <Inventory
           items={inventory}
@@ -660,6 +679,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           onUnequip={unequipItem}
           isEquipped={isEquipped}
           onUse={handleUseItem}
+          onSell={handleSell}
         />
       </div>
     </div>

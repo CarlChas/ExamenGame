@@ -36,7 +36,6 @@ const InspectModal = ({ item, onClose }: Props) => {
                 </p>
             )}
 
-
             {item.bonusStats && item.bonusStats.length > 0 && (
                 <>
                     <h4>Bonus Stats</h4>

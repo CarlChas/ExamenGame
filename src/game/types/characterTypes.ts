@@ -20,6 +20,8 @@ export interface Character {
   maxHp: number;
   maxMp: number;
 
+  gold: number;
+
   equipment: {
     weapon1?: LootItem;
     weapon2?: LootItem;
