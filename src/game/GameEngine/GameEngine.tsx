@@ -38,6 +38,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [inspectedItem, setInspectedItem] = useState<LootItem | null>(null);
   const [player, setPlayer] = useState<Character | null>(null);
   const [showInventoryPanel, setShowInventoryPanel] = useState(false);
+  const [showMerchant, setShowMerchant] = useState(false);
+
+  const openMerchant = () => {
+    console.log("Merchant opened!");
+    setShowMerchant(true);
+  };
+
 
   const hasLoadedOnce = useRef(false);
   const hasSyncedPlayerData = useRef(false);
@@ -512,6 +519,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           setInCombat={setInCombat}
           setEnemyInCombat={setEnemyInCombat}
           onHealPlayer={handleHealPlayer}
+          openMerchant={openMerchant}
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1rem' }}>
@@ -654,6 +662,37 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
       {inspectedItem && (
         <InspectModal item={inspectedItem} onClose={() => setInspectedItem(null)} />
+      )}
+      {showMerchant && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.95)',
+          zIndex: 1000,
+          color: 'white',
+          padding: '2rem',
+          overflowY: 'auto'
+        }}>
+          <h2>🛒 Merchant</h2>
+          <p>Merchant inventory will go here.</p>
+          <button
+            onClick={() => setShowMerchant(false)}
+            style={{
+              marginTop: '1rem',
+              backgroundColor: '#b00',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Close
+          </button>
+        </div>
       )}
 
       <div style={{ minWidth: '240px', color: 'white', backgroundColor: '#1a1a1a', padding: '1rem', borderRadius: '8px' }}>

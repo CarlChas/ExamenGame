@@ -10,6 +10,7 @@ interface Props {
   setInCombat: Dispatch<SetStateAction<boolean>>;
   setEnemyInCombat: Dispatch<SetStateAction<any>>;
   onHealPlayer: (npcName: string) => void;
+  openMerchant: () => void; // ✅ Added
 }
 
 const CanvasArea = ({
@@ -19,24 +20,10 @@ const CanvasArea = ({
   setInCombat,
   setEnemyInCombat,
   onHealPlayer,
+  openMerchant, // ✅ Used here
 }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const enemyImages = useRef<Record<string, HTMLImageElement>>({});
-
-  const draw = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const bgColor = areaBackgrounds[area.type ?? area.theme] || '#222';
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    drawNPCs(ctx);
-    drawEnemies(ctx);
-  };
 
   const areaBackgrounds: Record<string, string> = {
     city: '#1e2f4d',
@@ -50,6 +37,20 @@ const CanvasArea = ({
     celestial: '#333366',
     undead: '#2c2c3c',
     elemental: '#443311',
+  };
+
+  const draw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const bgColor = areaBackgrounds[area.type ?? area.theme] || '#222';
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawNPCs(ctx);
+    drawEnemies(ctx);
   };
 
   const drawNPCs = (ctx: CanvasRenderingContext2D) => {
@@ -111,33 +112,36 @@ const CanvasArea = ({
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
+      // Check NPCs
       for (let npc of area.npcs) {
         const dx = x - npc.x;
         const dy = y - npc.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < npc.radius) {
-          // Check if the NPC is an Inn or Tavern
           if (npc.type === 'inn' || npc.type === 'tavern') {
             onHealPlayer(npc.name);
+          } else if (npc.type === 'market') {
+            openMerchant();
           } else {
-            setDialog(npc.dialog); // Set default dialog for other NPCs
+            setDialog(npc.dialog);
           }
+
           return;
         }
       }
 
+      // Check Enemies
       for (let enemy of area.enemies ?? []) {
         const dx = x - (enemy.x ?? 0);
         const dy = y - (enemy.y ?? 0);
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 20) {
           const generated = getRandomEnemyForBiomeAndTheme(
-            area.type || 'wilderness',  // fallback if type is undefined
-            area.theme || 'undead',     // fallback
-            player.level                // scaling based on player level
+            area.type || 'wilderness',
+            area.theme || 'undead',
+            player.level
           );
 
-          // Preserve original enemy's sprite and position
           setEnemyInCombat({
             ...generated,
             sprite: enemy.sprite,
@@ -151,7 +155,7 @@ const CanvasArea = ({
         }
       }
 
-
+      // If area has an event
       if (area.event) {
         setDialog(area.event);
       }
@@ -183,7 +187,7 @@ const CanvasArea = ({
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [area, onHealPlayer]); // onHealPlayer is now stable, but keep in dependency array
+  }, [area, onHealPlayer, openMerchant]);
 
   return (
     <canvas
