@@ -313,6 +313,20 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           setDialog('You were defeated, child of time... The gears of time turns in reverse...');
           await handleLoad();
         }}
+        onFlee={(finalPlayerHp, finalPlayerMp) => {
+          setInCombat(false);
+          setEnemyInCombat(null);
+          setDialog(`${player.name} fled from battle!`);
+
+          setPlayer((prev) =>
+            prev ? {
+              ...prev,
+              currentHp: finalPlayerHp,
+              currentMp: finalPlayerMp,
+            } : null
+          );
+        }}
+
       />
     );
   }

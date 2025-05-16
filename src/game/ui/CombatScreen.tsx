@@ -17,9 +17,10 @@ interface Props {
     // Modify onVictory to accept xp and final player HP
     onVictory: (xpGained: number, finalPlayerHp: number) => void;
     onDefeat: () => void;
+    onFlee?: (finalPlayerHp: number, finalPlayerMp: number) => void;
 }
 
-const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
+const CombatScreen = ({ player, enemy, onVictory, onDefeat, onFlee }: Props) => {
     const [playerHp, setPlayerHp] = useState(player.currentHp);
     const [enemyHp, setEnemyHp] = useState(enemy.maxHp);
     const [enemyMove, setEnemyMove] = useState<string | null>(null);
@@ -63,6 +64,20 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
         setShowSkillsMenu(true);
     }
 
+    const handleFlee = () => {
+        const fleeChance = 0.5
+        const success = Math.random() < fleeChance;
+        if (success) {
+            appendLog(`${player.name} successfully flees!`);
+            setTimeout(() => {
+                onFlee?.(playerHp, player.currentMp);
+            }, 1000);
+        } else {
+            appendLog(`${player.name} failed to flee!`);
+            setTurn('enemy')
+        }
+    }
+
     const handleEnemyTurn = () => {
         if (enemyHp <= 0 || playerHp <= 0) return;
 
@@ -81,6 +96,7 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
             setTurn('player');
         }
     };
+
 
     useEffect(() => {
         if (turn === 'enemy') {
@@ -146,7 +162,7 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat }: Props) => {
                     <button onClick={handlePlayerSkill}>📀 Skills</button>
                     <button disabled>🛡 Defend</button>
                     <button disabled>🧪 Use Item</button>
-                    <button disabled>🏃‍♂️ Flee</button>
+                    <button onClick={handleFlee}>🏃‍♂️ Flee</button>
                 </div>
             )}
 
