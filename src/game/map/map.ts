@@ -2,7 +2,8 @@
 
 import { Enemy } from '../../combat/enemies';
 import { getRandomEnemyForBiomeAndTheme } from '../../combat/enemies';
-import { generateSpecificNPC, NPC } from '../npcs/npcGenerator';
+import { generateNPCsForArea, NPC } from '../npcs/npcGenerator';
+
 
 // === Types ===
 export type AreaType = 'wilderness' | 'dungeon' | 'town' | 'city' | 'village' | 'camp';
@@ -44,6 +45,7 @@ export interface BiomeSeed {
     settlementName?: string;
     occupiedCoords?: Set<string>;
     connectedToGate?: boolean;
+    npcPool?: NPC[];
 }
 
 // === Constants ===
@@ -93,16 +95,6 @@ function getUniqueSettlementName(): string {
     const name = available[Math.floor(Math.random() * available.length)];
     usedSettlementNames.add(name);
     return name;
-}
-
-function getLandmarkTypesFor(type: AreaType): LandmarkType[] {
-    switch (type) {
-        case 'city': return ['blacksmith', 'tavern', 'inn', 'market', 'temple', 'guild', 'fountain'];
-        case 'town': return ['blacksmith', 'inn', 'market', 'temple'];
-        case 'village': return ['tavern', 'fountain'];
-        case 'camp': return ['tavern'];
-        default: return [];
-    }
 }
 
 function generateSafePosition(existing: { x: number; y: number }[], radius = 25, padding = 50): { x: number; y: number } {
@@ -240,7 +232,12 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
                 if (gateCoords) break;
             }
         }
-
+        const npcPool = generateNPCsForArea(
+            type,
+            [50, 550],
+            [50, 350],
+            []
+        );
         const seed: BiomeSeed = {
             x: xBase,
             y: yBase,
@@ -251,6 +248,7 @@ function getBiomeForCoords(x: number, y: number): BiomeSeed {
             settlementName: name,
             occupiedCoords: blob,
             ...(gateCoords && { gateCoords }),
+            npcPool,
         };
 
         biomeSeeds.push(seed);
@@ -322,21 +320,28 @@ export function getArea(x: number, y: number): Area {
         : [];
 
     let npcs: NPC[] = [];
-    let landmarks: Landmark[] = [];
 
     if (seed.settlementName && ['city', 'town', 'village', 'camp'].includes(seed.type)) {
-        const landmarkTypes = getLandmarkTypesFor(type);
-        landmarks = landmarkTypes.map(landmarkType => {
+        const allNPCs = seed.npcPool ?? [];
+
+        // Optionally distribute NPCs across tiles to avoid crowding
+        // For now: pick a small subset randomly for this tile
+        const tileCoordKey = `${x},${y}`;
+        const tileIndex = Array.from(seed.occupiedCoords ?? []).indexOf(tileCoordKey);
+        const totalTiles = seed.occupiedCoords?.size || 1;
+
+        // Spread NPCs evenly across tiles
+        npcs = allNPCs.filter((_, i) => i % totalTiles === tileIndex);
+
+        // Assign positions
+        npcs = npcs.map(npc => {
             const pos = generateSafePosition(positions);
-            const npc = generateSpecificNPC(landmarkType, pos.x, pos.y);
-            npcs.push(npc);
-            return {
-                type: landmarkType,
-                name: landmarkType.charAt(0).toUpperCase() + landmarkType.slice(1),
-                ...pos,
-            };
+            positions.push(pos);
+            return { ...npc, x: pos.x, y: pos.y };
         });
     }
+
+
 
     const isGateTile = seed.gateCoords?.x === x && seed.gateCoords?.y === y;
     const isCoreTile = seed.x === x && seed.y === y;
@@ -364,7 +369,6 @@ export function getArea(x: number, y: number): Area {
         theme,
         type,
         role,
-        landmarks,
     };
 
     mapData.set(key, area);
