@@ -648,24 +648,23 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         position: 'relative'
       }}
     >
-      {/* Combination: Floating mini-map in landscape, draggable modal on mobile or when toggled */}
-      {!isLandscape ? (
-        showMiniMap && (
-          <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}>
-            <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
-          </div>
-        )
-      ) : (
-        showMiniMap && (
-          <ResizableModal
-            title="🗺 MiniMap"
-            onClose={() => setShowMiniMap(false)}
-            initialWidth={300}
-            initialHeight={300}
-          >
-            <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
-          </ResizableModal>
-        )
+      {/* Always show MiniMap on desktop in a corner */}
+      {!isMobile && (
+        <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 10 }}>
+          <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
+        </div>
+      )}
+
+      {/* Show minimap as draggable modal on mobile */}
+      {isMobile && showMiniMap && (
+        <ResizableModal
+          title="🗺 MiniMap"
+          onClose={() => setShowMiniMap(false)}
+          initialWidth={300}
+          initialHeight={300}
+        >
+          <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
+        </ResizableModal>
       )}
 
       {!isMobile || isLandscape || showStats ? (

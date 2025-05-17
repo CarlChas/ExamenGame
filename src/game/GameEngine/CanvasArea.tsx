@@ -87,7 +87,21 @@ const CanvasArea = ({
   };
 
   useEffect(() => {
-    draw();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Match canvas resolution to actual CSS size for accurate clicks
+    const resizeCanvas = () => {
+      const { width, height } = canvas.getBoundingClientRect();
+      canvas.width = width;
+      canvas.height = height;
+      draw();
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     area.enemies?.forEach(enemy => {
       const sprite = enemy.sprite;
@@ -103,9 +117,6 @@ const CanvasArea = ({
         };
       }
     });
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
 
     const handleClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -159,8 +170,10 @@ const CanvasArea = ({
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
 
       let hoveringEnemy = false;
       for (let enemy of area.enemies ?? []) {
@@ -182,26 +195,24 @@ const CanvasArea = ({
     return () => {
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('resize', resizeCanvas);
     };
   }, [area, onHealPlayer, openMerchant]);
 
   return (
     <canvas
       ref={canvasRef}
-      width={800}
-      height={600}
       style={{
         width: '100%',
-        maxWidth: '960px', // ✅ Limit how wide it gets
+        maxWidth: '960px',
         height: 'auto',
         display: 'block',
-        margin: '0 auto',   // ✅ Center it
+        margin: '0 auto',
         backgroundColor: '#222',
         borderRadius: '8px',
         aspectRatio: '4 / 3',
       }}
     />
-
   );
 };
 
