@@ -44,5 +44,5 @@ model Character {
   equipment   Json?
 
   baseStats Json?
-  gold      Int
+  gold      Int?
 }
