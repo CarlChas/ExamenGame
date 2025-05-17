@@ -9,9 +9,20 @@ interface Props {
     isEquipped: (item: LootItem) => boolean;
     onUse: (item: LootItem) => void;
     onSell: (item: LootItem) => void;
+    canSell?: boolean;
 }
 
-const Inventory = ({ items, onRemove, onEquip, onUnequip, isEquipped, onInspect, onUse, onSell }: Props) => {
+const Inventory: React.FC<Props> = ({
+    items,
+    onRemove,
+    onEquip,
+    onUnequip,
+    isEquipped,
+    onInspect,
+    onUse,
+    onSell,
+    canSell = false,
+}) => {
     return (
         <div style={{ marginTop: '2rem', color: 'white' }}>
             <h4>Inventory</h4>
@@ -51,7 +62,7 @@ const Inventory = ({ items, onRemove, onEquip, onUnequip, isEquipped, onInspect,
                                     </button>
                                 )}
 
-                                {onSell && (
+                                {canSell && (
                                     <button onClick={() => onSell(item)}>💰 Sell</button>
                                 )}
 

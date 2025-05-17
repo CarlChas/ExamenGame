@@ -654,6 +654,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
                 isEquipped={isEquipped}
                 onUse={handleUseItem}
                 onSell={handleSell}
+                canSell={showMerchant}
               />
             </div>
           </div>
