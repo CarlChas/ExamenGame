@@ -6,6 +6,7 @@ interface ResizableModalProps {
     onClose: () => void;
     initialWidth?: number;
     initialHeight?: number;
+    storageKey?: string;
 }
 
 const ResizableModal = ({
@@ -18,10 +19,10 @@ const ResizableModal = ({
     const [width, setWidth] = useState(initialWidth);
     const [height, setHeight] = useState(initialHeight);
     const [position, setPosition] = useState({ top: 80, left: 80 });
+    const [isMinimized, setIsMinimized] = useState(false);
 
     const modalRef = useRef<HTMLDivElement | null>(null);
 
-    // ✅ Dragging
     const handleDragStart = (e: React.MouseEvent) => {
         const startX = e.clientX;
         const startY = e.clientY;
@@ -42,9 +43,8 @@ const ResizableModal = ({
         window.addEventListener('mouseup', onMouseUp);
     };
 
-    // ✅ Resizing
     const handleResizeStart = (e: React.MouseEvent) => {
-        e.stopPropagation(); // prevent drag from triggering
+        e.stopPropagation();
         const startX = e.clientX;
         const startY = e.clientY;
         const startWidth = width;
@@ -72,18 +72,17 @@ const ResizableModal = ({
                 top: position.top,
                 left: position.left,
                 width,
-                height,
+                height: isMinimized ? 'auto' : height,
                 backgroundColor: '#111',
                 color: 'white',
                 border: '2px solid #444',
                 borderRadius: '6px',
-                padding: '0.5rem',
                 zIndex: 2000,
-                overflow: 'auto',
-                boxShadow: '0 0 10px rgba(0,0,0,0.7)'
+                overflow: 'hidden',
+                boxShadow: '0 0 10px rgba(0,0,0,0.7)',
             }}
         >
-            {/* Drag handle / title bar */}
+            {/* Title Bar */}
             <div
                 onMouseDown={handleDragStart}
                 style={{
@@ -94,41 +93,65 @@ const ResizableModal = ({
                     backgroundColor: '#222',
                     padding: '0.5rem 1rem',
                     borderBottom: '1px solid #333',
-                    userSelect: 'none'
+                    userSelect: 'none',
                 }}
             >
                 <h2 style={{ margin: 0 }}>{title}</h2>
-                <button
-                    onClick={onClose}
-                    style={{
-                        backgroundColor: '#b00',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '0.25rem 0.5rem',
-                        cursor: 'pointer',
-                    }}
-                >
-                    ✕
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMinimized(prev => !prev);
+                        }}
+                        style={{
+                            backgroundColor: '#555',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '0.25rem 0.5rem',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        {isMinimized ? '🔼' : '🔽'}
+                    </button>
+                    <button
+                        onClick={onClose}
+                        style={{
+                            backgroundColor: '#b00',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '0.25rem 0.5rem',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        ✕
+                    </button>
+                </div>
             </div>
 
-            {/* Modal content */}
-            <div style={{ padding: '1rem' }}>{children}</div>
+            {/* Modal Content */}
+            {!isMinimized && (
+                <div style={{ padding: '1rem', height: 'calc(100% - 3rem)', overflowY: 'auto' }}>
+                    {children}
+                </div>
+            )}
 
-            {/* Resize handle */}
-            <div
-                onMouseDown={handleResizeStart}
-                style={{
-                    position: 'absolute',
-                    right: 0,
-                    bottom: 0,
-                    width: '16px',
-                    height: '16px',
-                    cursor: 'nwse-resize',
-                    backgroundColor: '#333',
-                }}
-            />
+            {/* Resize Handle */}
+            {!isMinimized && (
+                <div
+                    onMouseDown={handleResizeStart}
+                    style={{
+                        position: 'absolute',
+                        right: 0,
+                        bottom: 0,
+                        width: '16px',
+                        height: '16px',
+                        cursor: 'nwse-resize',
+                        backgroundColor: '#333',
+                    }}
+                />
+            )}
         </div>
     );
 };

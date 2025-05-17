@@ -34,6 +34,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [dialog, setDialog] = useState<string | null>(null);
   const [inventory, setInventory] = useState<LootItem[]>([]);
   const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
+  const currentPosRef = useRef(currentPos);
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [inCombat, setInCombat] = useState(false);
   const [enemyInCombat, setEnemyInCombat] = useState<any | null>(null);
@@ -42,6 +43,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [showInventoryPanel, setShowInventoryPanel] = useState(false);
   const [showMerchant, setShowMerchant] = useState(false);
   const [merchantItems, setMerchantItems] = useState<LootItem[]>([]);
+
 
   const openMerchant = () => {
     const items = Array.from({ length: 5 }, () => generateRandomLoot(player?.level || 1));
@@ -57,6 +59,58 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     const name = item.name.toLowerCase();
     return ['greatsword', 'greataxe', 'bow'].some(type => name.includes(type));
   };
+  useEffect(() => {
+    currentPosRef.current = currentPos;
+  }, [currentPos]);
+
+  const moveWithRef = (dir: DirectionKey) => {
+    const { x, y } = currentPosRef.current;
+
+    const directions = {
+      north: { x, y: y - 1, exit: 'north', entry: 'south' },
+      south: { x, y: y + 1, exit: 'south', entry: 'north' },
+      east: { x: x + 1, y, exit: 'east', entry: 'west' },
+      west: { x: x - 1, y, exit: 'west', entry: 'east' },
+    };
+
+    const { x: newX, y: newY, exit, entry } = directions[dir];
+    const current = getArea(x, y);
+    const destination = getArea(newX, newY);
+
+    const isBlocked =
+      current.blocked?.[exit as DirectionKey] ||
+      destination?.blocked?.[entry as DirectionKey];
+
+    if (!isBlocked) {
+      setCurrentPos({ x: newX, y: newY });
+      setArea(destination);
+      setDialog(null);
+    } else {
+      setDialog("You can't go that way.");
+    }
+  };
+
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+      if (e.key === 'i') setShowInventoryPanel(prev => !prev);
+      if (e.key === 'm') setShowMiniMap(prev => !prev);
+      if (e.key === 'Escape') {
+        setShowInventoryPanel(false);
+        setShowMerchant(false);
+      }
+      if (e.key === 'w') moveWithRef('north');
+      if (e.key === 's') moveWithRef('south');
+      if (e.key === 'a') moveWithRef('west');
+      if (e.key === 'd') moveWithRef('east');
+    };
+
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
 
 
   useEffect(() => {
@@ -637,6 +691,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           merchantItems={merchantItems}
           onSell={handleSell}
           onBuy={handleBuy}
+          gold={player?.gold ?? 0}
         />
       )
       }
