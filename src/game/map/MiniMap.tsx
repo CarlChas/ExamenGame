@@ -7,8 +7,6 @@ interface Props {
 }
 
 const TILE_SIZE = 24;
-const VIEW_WIDTH = 15;
-const VIEW_HEIGHT = 15;
 
 const typeColors: Record<string, string> = {
     city: '#3a4f8f',
@@ -51,8 +49,8 @@ const MiniMap = ({ currentX, currentY }: Props) => {
     });
 
     const centerOnPlayer = () => {
-        const x = -(currentX * TILE_SIZE - (VIEW_WIDTH * TILE_SIZE) / 2);
-        const y = -(currentY * TILE_SIZE - (VIEW_HEIGHT * TILE_SIZE) / 2);
+        const x = -(currentX * TILE_SIZE - (containerRef.current?.offsetWidth ?? 0) / 2);
+        const y = -(currentY * TILE_SIZE - (containerRef.current?.offsetHeight ?? 0) / 2);
         setOffset({ x, y });
     };
 
@@ -78,26 +76,49 @@ const MiniMap = ({ currentX, currentY }: Props) => {
         }
     };
 
-
     return (
-        <div style={{
-            width: VIEW_WIDTH * TILE_SIZE,
-            height: VIEW_HEIGHT * TILE_SIZE + 40,
-            backgroundColor: '#111',
-            padding: '5px',
-            borderRadius: '6px',
-            overflow: 'hidden',
-            fontFamily: 'sans-serif',
-            userSelect: 'none',
-        }}>
-            <div style={{ color: '#fff', fontSize: '0.75rem' }}>
-                Coords: ({currentX}, {currentY})
+        <div
+            style={{
+                width: '100%',
+                height: '100%',
+                backgroundColor: '#111',
+                padding: '0.5rem',
+                borderRadius: '6px',
+                fontFamily: 'sans-serif',
+                userSelect: 'none',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    color: '#fff',
+                    fontSize: '0.75rem',
+                    marginBottom: '4px',
+                    marginTop: -15,
+                }}
+            >
+                <span>Coords: ({currentX}, {currentY})</span>
+                <button
+                    onClick={centerOnPlayer}
+                    style={{
+                        fontSize: '0.7rem',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        border: 'none',
+                        backgroundColor: '#333',
+                        color: '#fff',
+                        cursor: 'pointer',
+                    }}
+                >
+                    🎯 Center
+                </button>
             </div>
 
-            <div style={{ marginBottom: 4, color: '#fff', display: 'flex', justifyContent: 'space-between' }}>
-                <span>🗺 Map</span>
-                <button onClick={centerOnPlayer} style={{ fontSize: '0.7rem' }}>🎯 Center</button>
-            </div>
 
             <div
                 ref={containerRef}
@@ -105,19 +126,23 @@ const MiniMap = ({ currentX, currentY }: Props) => {
                 onMouseUp={handleMouseUp}
                 onMouseMove={handleMouseMove}
                 style={{
+                    flexGrow: 1,
                     width: '100%',
-                    height: VIEW_HEIGHT * TILE_SIZE,
+                    height: '100%',
                     overflow: 'hidden',
                     cursor: 'grab',
                     position: 'relative',
+                    border: '1px solid #333',
+                    borderRadius: '4px',
                 }}
             >
-                <div style={{
-                    position: 'absolute',
-                    left: offset.x,
-                    top: offset.y,
-                }}>
-                    {/* Tiles */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: offset.x,
+                        top: offset.y,
+                    }}
+                >
                     {coords.map(({ x, y, key }) => {
                         const area = map[key];
                         const isCurrent = x === currentX && y === currentY;
@@ -164,6 +189,7 @@ const MiniMap = ({ currentX, currentY }: Props) => {
             </div>
         </div>
     );
+
 };
 
 export default MiniMap;

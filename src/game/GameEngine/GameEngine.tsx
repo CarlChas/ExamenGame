@@ -19,6 +19,8 @@ import CanvasArea from './CanvasArea';
 import InspectModal from '../ui/InspectModal';
 import { applyBonuses } from '../../utils/statBonuses';
 import MerchantModal from '../ui/Merchant';
+import ResizableModal from '../ui/ResizeModal';
+
 
 interface Props {
   character: Character;
@@ -607,7 +609,16 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
   return (
     <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-      {showMiniMap && <MiniMap currentX={currentPos.x} currentY={currentPos.y} />}
+      {showMiniMap && (
+        <ResizableModal
+          title="🗺 MiniMap"
+          onClose={() => setShowMiniMap(false)}
+          initialWidth={400}
+          initialHeight={400}
+        >
+          <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
+        </ResizableModal>
+      )}
       <CharacterStats character={player} />
 
       <div>
