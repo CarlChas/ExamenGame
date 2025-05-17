@@ -121,6 +121,7 @@ router.post('/save-progress', async (req, res) => {
         divinity: progress.divinity,
         equipment: progress.equipment,
         baseStats: progress.baseStats,
+        gold: progress.gold,
       },
     });
 
