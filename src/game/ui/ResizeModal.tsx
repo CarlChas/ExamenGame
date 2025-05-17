@@ -7,7 +7,10 @@ interface ResizableModalProps {
     initialWidth?: number;
     initialHeight?: number;
     storageKey?: string;
+    onMinimize?: () => void;
+    onRestore?: () => void;
 }
+
 
 const ResizableModal = ({
     title = '',
@@ -15,6 +18,8 @@ const ResizableModal = ({
     onClose,
     initialWidth = 400,
     initialHeight = 300,
+    onMinimize,
+    onRestore,
 }: ResizableModalProps) => {
     const [width, setWidth] = useState(initialWidth);
     const [height, setHeight] = useState(initialHeight);
@@ -101,8 +106,17 @@ const ResizableModal = ({
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            setIsMinimized(prev => !prev);
+                            setIsMinimized(prev => {
+                                const newState = !prev;
+                                if (newState) {
+                                    onMinimize?.(); // optional callback
+                                } else {
+                                    onRestore?.();
+                                }
+                                return newState;
+                            });
                         }}
+
                         style={{
                             backgroundColor: '#555',
                             color: 'white',

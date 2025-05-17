@@ -43,6 +43,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [showInventoryPanel, setShowInventoryPanel] = useState(false);
   const [showMerchant, setShowMerchant] = useState(false);
   const [merchantItems, setMerchantItems] = useState<LootItem[]>([]);
+  const [inventoryMinimized, setInventoryMinimized] = useState(false);
 
 
   const openMerchant = () => {
@@ -90,27 +91,51 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     }
   };
 
-
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT') return;
 
-      if (e.key === 'i') setShowInventoryPanel(prev => !prev);
-      if (e.key === 'm') setShowMiniMap(prev => !prev);
-      if (e.key === 'Escape') {
-        setShowInventoryPanel(false);
-        setShowMerchant(false);
+      const modalIsBlocking = showMerchant || (showInventoryPanel && !inventoryMinimized);
+
+      if (modalIsBlocking) {
+        if (e.key === 'Escape') {
+          setShowMerchant(false);
+          setShowInventoryPanel(false);
+          setInventoryMinimized(false);
+        }
+        return;
       }
-      if (e.key === 'w') moveWithRef('north');
-      if (e.key === 's') moveWithRef('south');
-      if (e.key === 'a') moveWithRef('west');
-      if (e.key === 'd') moveWithRef('east');
+
+      switch (e.key.toLowerCase()) {
+        case 'i':
+          setShowInventoryPanel(prev => !prev);
+          setInventoryMinimized(false); // reset minimization
+          break;
+        case 'm':
+          setShowMiniMap(prev => !prev);
+          break;
+        case 'w':
+          moveWithRef('north');
+          break;
+        case 's':
+          moveWithRef('south');
+          break;
+        case 'a':
+          moveWithRef('west');
+          break;
+        case 'd':
+          moveWithRef('east');
+          break;
+        case 'escape':
+          setShowInventoryPanel(false);
+          setShowMerchant(false);
+          break;
+      }
     };
 
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, []);
-
+  }, [showMerchant, showInventoryPanel, inventoryMinimized]);
 
 
   useEffect(() => {
@@ -640,6 +665,8 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           onSell={handleSell}
           canSell={showMerchant}
           onClose={() => setShowInventoryPanel(false)}
+          onMinimize={() => setInventoryMinimized(true)}
+          onRestore={() => setInventoryMinimized(false)}
           equipmentSummary={
             <div
               style={{

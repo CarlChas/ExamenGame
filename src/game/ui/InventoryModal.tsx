@@ -14,6 +14,8 @@ interface Props {
     onClose: () => void;
     canSell?: boolean;
     equipmentSummary?: React.ReactNode;
+    onMinimize: () => void;
+    onRestore: () => void;
 }
 
 const InventoryModal = ({
@@ -28,9 +30,11 @@ const InventoryModal = ({
     onClose,
     canSell = false,
     equipmentSummary,
+    onMinimize,
+    onRestore,
 }: Props) => {
     return (
-        <ResizableModal title="🎒 Inventory" onClose={onClose} initialWidth={750} initialHeight={500}>
+        <ResizableModal title="🎒 Inventory" onClose={onClose} onMinimize={onMinimize} onRestore={onRestore} initialWidth={750} initialHeight={500}>
             <div
                 style={{
                     display: 'flex',
