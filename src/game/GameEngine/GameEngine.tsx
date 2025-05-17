@@ -641,62 +641,57 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       style={{
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
-        gap: '1rem',
         justifyContent: 'center',
+        alignItems: 'flex-start',
         padding: '1rem',
-        flexWrap: 'wrap',
-        position: 'relative'
+        gap: '1rem',
+        flexWrap: 'nowrap',
+        position: 'relative',
+        maxWidth: '1200px',
+        margin: '0 auto'
       }}
     >
-      {/* Always show MiniMap on desktop in a corner */}
-      {!isMobile && (
-        <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 10 }}>
-          <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
-        </div>
-      )}
-
-      {/* Show minimap as draggable modal on mobile */}
-      {isMobile && showMiniMap && (
+      {!isMobile && showMiniMap && (
         <ResizableModal
           title="🗺 MiniMap"
           onClose={() => setShowMiniMap(false)}
-          initialWidth={300}
-          initialHeight={300}
+          initialWidth={220}
+          initialHeight={220}
         >
           <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
         </ResizableModal>
       )}
 
-      {!isMobile || isLandscape || showStats ? (
-        <CharacterStats character={player} />
-      ) : (
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <button
-            onClick={() => setShowStats(prev => !prev)}
-            style={{
-              backgroundColor: '#333',
-              color: '#fff',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid #555',
-              cursor: 'pointer',
-            }}
-          >
-            {showStats ? '🙈 Hide Stats' : '🧠 Show Stats'}
-          </button>
-        </div>
+      {/* Show minimap as draggable modal on mobile instead */}
+      {isMobile && showMiniMap && (
+        <ResizableModal
+          title="🗘 MiniMap"
+          onClose={() => setShowMiniMap(false)}
+          initialWidth={280}
+          initialHeight={280}
+        >
+          <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
+        </ResizableModal>
       )}
 
+      {/* Character Stats block */}
+      {!isMobile || isLandscape || showStats ? (
+        <CharacterStats character={player} />
+      ) : null}
+
+      {/* Game Canvas Area in the center */}
       <div
         style={{
           flex: 1,
-          minWidth: 300,
-          maxWidth: isMobile ? '100%' : '960px',
-          aspectRatio: '16 / 9',
+          minWidth: 0,
+          maxWidth: '960px',
           margin: '0 auto',
-          overflow: 'visible',
           backgroundColor: '#223',
           borderRadius: '8px',
+          paddingBottom: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
         }}
       >
         <h3 style={{ color: 'white', textAlign: 'center' }}>{area.name}</h3>
@@ -709,6 +704,16 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           setEnemyInCombat={setEnemyInCombat}
           onHealPlayer={handleHealPlayer}
           openMerchant={openMerchant}
+          style={{
+            width: isMobile ? '100%' : '90%',
+            maxWidth: isMobile ? '100%' : '960px',
+            height: isMobile ? '70vh' : '600px',
+            margin: '0 auto',
+            backgroundColor: '#222',
+            borderRadius: '8px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1rem', touchAction: 'manipulation' }}>
@@ -719,19 +724,38 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           <div />
           {renderMoveButton('east', '➡️ East')}
           <div />
-          {renderMoveButton('south', '⬇️ South')}
+          {renderMoveButton('south', '🔽️ South')}
           <div />
         </div>
 
+        {/* Move Show Stats button here for mobile */}
+        {isMobile && !isLandscape && (
+          <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+            <button
+              onClick={() => setShowStats(prev => !prev)}
+              style={{
+                backgroundColor: '#444',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '6px',
+                border: '1px solid #555',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+              }}
+            >
+              {showStats ? '🙈 Hide Stats' : '🧠 Show Stats'}
+            </button>
+          </div>
+        )}
+
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
-          <button onClick={handleSave}>💾 Save</button>
+          <button onClick={handleSave}>📂 Save</button>
           <button onClick={handleLoad}>📂 Load Game</button>
           <button onClick={onSwitchCharacter}>🔁 Switch Character</button>
           <button onClick={() => setShowMiniMap((prev) => !prev)}>
-            {showMiniMap ? '🗺️ Hide Map' : '🗺️ Show Map'}
+            {showMiniMap ? '🗘️ Hide Map' : '🗘️ Show Map'}
           </button>
           <button onClick={() => setShowInventoryPanel(true)}>🎒 Open Inventory</button>
-
         </div>
 
         {dialog && (

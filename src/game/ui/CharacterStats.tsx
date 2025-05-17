@@ -11,7 +11,6 @@ const CharacterStats = ({ character }: Props) => {
 
     return (
         <div style={{
-            marginTop: '1rem',
             backgroundColor: '#222',
             padding: '1rem',
             borderRadius: '8px',

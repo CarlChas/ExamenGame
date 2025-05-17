@@ -11,7 +11,13 @@ interface Props {
   setEnemyInCombat: Dispatch<SetStateAction<any>>;
   onHealPlayer: (npcName: string) => void;
   openMerchant: () => void;
+  style?: React.CSSProperties;
 }
+
+const clamp = (value: number, min: number, max: number): number => {
+  return Math.max(min, Math.min(max, value));
+};
+
 
 const CanvasArea = ({
   area,
@@ -21,6 +27,7 @@ const CanvasArea = ({
   setEnemyInCombat,
   onHealPlayer,
   openMerchant,
+  style,
 }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const enemyImages = useRef<Record<string, HTMLImageElement>>({});
@@ -54,29 +61,41 @@ const CanvasArea = ({
   };
 
   const drawNPCs = (ctx: CanvasRenderingContext2D) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     area.npcs.forEach(npc => {
+      const radius = npc.radius;
+      const clampedX = clamp(npc.x, radius, canvas.width - radius);
+      const clampedY = clamp(npc.y, radius, canvas.height - radius);
+
       ctx.beginPath();
-      ctx.arc(npc.x, npc.y, npc.radius, 0, Math.PI * 2);
+      ctx.arc(clampedX, clampedY, radius, 0, Math.PI * 2);
       ctx.fillStyle = 'skyblue';
       ctx.fill();
       ctx.fillStyle = 'black';
       ctx.font = '12px sans-serif';
-      ctx.fillText(npc.name, npc.x - npc.radius, npc.y - npc.radius - 5);
+      ctx.fillText(npc.name, clampedX - radius, clampedY - radius - 5);
     });
   };
 
+
   const drawEnemies = (ctx: CanvasRenderingContext2D) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     area.enemies?.forEach(enemy => {
-      const ex = enemy.x ?? 0;
-      const ey = enemy.y ?? 0;
+      const radius = 20;
+      const ex = clamp(enemy.x ?? 0, radius, canvas.width - radius);
+      const ey = clamp(enemy.y ?? 0, radius, canvas.height - radius);
       const sprite = enemy.sprite;
       const image = sprite ? enemyImages.current[sprite] : undefined;
 
       if (image && image.complete && image.naturalWidth !== 0) {
-        ctx.drawImage(image, ex - 20, ey - 20, 40, 40);
+        ctx.drawImage(image, ex - radius, ey - radius, 2 * radius, 2 * radius);
       } else {
         ctx.beginPath();
-        ctx.arc(ex, ey, 20, 0, Math.PI * 2);
+        ctx.arc(ex, ey, radius, 0, Math.PI * 2);
         ctx.fillStyle = 'crimson';
         ctx.fill();
         ctx.fillStyle = 'white';
@@ -85,6 +104,7 @@ const CanvasArea = ({
       }
     });
   };
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -211,6 +231,7 @@ const CanvasArea = ({
         backgroundColor: '#222',
         borderRadius: '8px',
         aspectRatio: '4 / 3',
+        ...(style || {})
       }}
     />
   );
