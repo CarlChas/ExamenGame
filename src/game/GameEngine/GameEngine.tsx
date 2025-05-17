@@ -7,6 +7,7 @@ import StatPanel from '../ui/StatPanel';
 import CharacterStats from '../ui/CharacterStats';
 import { Character } from '../types/characterTypes';
 import CombatScreen from '../ui/CombatScreen';
+import InventoryModal from '../ui/InventoryModal';
 import {
   calculateMaxHp,
   calculateMaxMp,
@@ -17,6 +18,7 @@ import MiniMap from '../map/MiniMap';
 import CanvasArea from './CanvasArea';
 import InspectModal from '../ui/InspectModal';
 import { applyBonuses } from '../../utils/statBonuses';
+import MerchantModal from '../ui/Merchant';
 
 interface Props {
   character: Character;
@@ -39,12 +41,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [player, setPlayer] = useState<Character | null>(null);
   const [showInventoryPanel, setShowInventoryPanel] = useState(false);
   const [showMerchant, setShowMerchant] = useState(false);
+  const [merchantItems, setMerchantItems] = useState<LootItem[]>([]);
 
   const openMerchant = () => {
-    console.log("Merchant opened!");
+    const items = Array.from({ length: 5 }, () => generateRandomLoot(player?.level || 1));
+    setMerchantItems(items);
     setShowMerchant(true);
   };
-
 
   const hasLoadedOnce = useRef(false);
   const hasSyncedPlayerData = useRef(false);
@@ -278,6 +281,24 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     setPlayer((prev) =>
       prev && { ...prev, xp: prev.xp + xpGained, currentHp: finalPlayerHp }
     );
+  };
+
+  const handleBuy = (item: LootItem) => {
+    if (!player) return;
+    const cost = item.value ?? 0;
+
+    if ((player.gold ?? 0) < cost) {
+      setDialog("You can't afford that.");
+      return;
+    }
+
+    setPlayer(prev =>
+      prev ? { ...prev, gold: (prev.gold ?? 0) - cost } : null
+    );
+
+    setInventory(prev => [...prev, item]);
+    setMerchantItems(prev => prev.filter(i => i.id !== item.id));
+    setDialog(`You bought ${item.name} for ${cost} gold.`);
   };
 
 
@@ -554,147 +575,71 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       </div>
 
       {showInventoryPanel && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.95)',
-            zIndex: 1000,
-            overflowY: 'auto',
-          }}
-        >
-          <button
-            onClick={() => setShowInventoryPanel(false)}
-            aria-label="Close inventory"
-            style={{
-              position: 'fixed',
-              top: '1rem',
-              right: '1rem',
-              width: '42px',
-              height: '42px',
-              backgroundColor: '#b00',
-              color: '#fff',
-              fontSize: '20px',
-              fontWeight: 'bold',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              zIndex: 1100,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            X
-          </button>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-              gap: '4rem',
-              padding: '2rem',
-              flexWrap: 'wrap',
-              color: 'white',
-            }}
-          >
-            <div>
-              <h3 style={{ textAlign: 'center' }}>🧍 Equipped Gear</h3>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateAreas: `
-              ". helmet ."
-              "weapon chest weapon2"
-              ". leggings ."
-              ". boots ."
-            `,
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: '1rem',
-                  justifyItems: 'center',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                }}
-              >
-                <div style={{ gridArea: 'helmet' }}>
-                  {player?.equipment.armor.helmet?.name || '🪖 Helmet'}
-                </div>
-                <div style={{ gridArea: 'weapon' }}>
-                  {player?.equipment.weapon1?.name || '🗡 Weapon'}
-                </div>
-
-                <div style={{ gridArea: 'chest' }}>
-                  {player?.equipment.armor.chest?.name || '🧥 Chestplate'}
-                </div>
-                <div style={{ gridArea: 'weapon2' }}>
-                  {player?.equipment.weapon2?.name || '🛡 Off-Hand'}
-                </div>
-                <div style={{ gridArea: 'leggings' }}>
-                  {player?.equipment.armor.legs?.name || '👖 Leggings'}
-                </div>
-                <div style={{ gridArea: 'boots' }}>
-                  {player?.equipment.armor.boots?.name || '🥾 Boots'}
-                </div>
+        <InventoryModal
+          items={inventory}
+          isEquipped={isEquipped}
+          onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
+          onInspect={setInspectedItem}
+          onEquip={equipItem}
+          onUnequip={unequipItem}
+          onUse={handleUseItem}
+          onSell={handleSell}
+          canSell={showMerchant}
+          onClose={() => setShowInventoryPanel(false)}
+          equipmentSummary={
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateAreas: `
+            ". helmet ."
+            "weapon chest weapon2"
+            ". leggings ."
+            ". boots ."
+          `,
+                gridTemplateColumns: '1fr 1fr 1fr',
+                gap: '1rem',
+                justifyItems: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ gridArea: 'helmet' }}>
+                {player?.equipment.armor.helmet?.name || '🪖 Helmet'}
+              </div>
+              <div style={{ gridArea: 'weapon' }}>
+                {player?.equipment.weapon1?.name || '🗡 Weapon'}
+              </div>
+              <div style={{ gridArea: 'chest' }}>
+                {player?.equipment.armor.chest?.name || '🧥 Chestplate'}
+              </div>
+              <div style={{ gridArea: 'weapon2' }}>
+                {player?.equipment.weapon2?.name || '🛡 Off-Hand'}
+              </div>
+              <div style={{ gridArea: 'leggings' }}>
+                {player?.equipment.armor.legs?.name || '👖 Leggings'}
+              </div>
+              <div style={{ gridArea: 'boots' }}>
+                {player?.equipment.armor.boots?.name || '🥾 Boots'}
               </div>
             </div>
-
-            <div>
-              <h3>🎒 Inventory</h3>
-              <Inventory
-                items={inventory}
-                onEquip={equipItem}
-                onUnequip={unequipItem}
-                onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
-                onInspect={setInspectedItem}
-                isEquipped={isEquipped}
-                onUse={handleUseItem}
-                onSell={handleSell}
-                canSell={showMerchant}
-              />
-            </div>
-          </div>
-        </div>
+          }
+        />
       )}
+
 
       {inspectedItem && (
         <InspectModal item={inspectedItem} onClose={() => setInspectedItem(null)} />
       )}
       {showMerchant && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'rgba(0,0,0,0.95)',
-          zIndex: 1000,
-          color: 'white',
-          padding: '2rem',
-          overflowY: 'auto'
-        }}>
-          <h2>🛒 Merchant</h2>
-          <p>Merchant inventory will go here.</p>
-          <button
-            onClick={() => setShowMerchant(false)}
-            style={{
-              marginTop: '1rem',
-              backgroundColor: '#b00',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            Close
-          </button>
-        </div>
-      )}
+        <MerchantModal
+          onClose={() => setShowMerchant(false)}
+          inventory={inventory}
+          merchantItems={merchantItems}
+          onSell={handleSell}
+          onBuy={handleBuy}
+        />
+      )
+      }
 
       <div style={{ minWidth: '240px', color: 'white', backgroundColor: '#1a1a1a', padding: '1rem', borderRadius: '8px' }}>
         <h3 style={{ marginTop: 0 }}>{player.name}</h3>
@@ -722,7 +667,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           onSell={handleSell}
         />
       </div>
-    </div>
+    </div >
   );
 };
 
