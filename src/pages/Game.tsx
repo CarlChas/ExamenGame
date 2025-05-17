@@ -87,7 +87,7 @@ const Game = () => {
     if (selectedCharacter) {
         return (
             <>
-                <button onClick={handleLogout}>Log Out</button>
+                {/* <button onClick={handleLogout}>Log Out</button> */}
                 <GameEngine
                     character={selectedCharacter}
                     onSwitchCharacter={() => setSelectedCharacter(null)}

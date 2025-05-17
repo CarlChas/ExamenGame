@@ -11,6 +11,8 @@ interface ResizableModalProps {
     onRestore?: () => void;
 }
 
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 600;
+
 
 const ResizableModal = ({
     title = '',
@@ -152,7 +154,7 @@ const ResizableModal = ({
             )}
 
             {/* Resize Handle */}
-            {!isMinimized && (
+            {!isMinimized && !isMobile && (
                 <div
                     onMouseDown={handleResizeStart}
                     style={{

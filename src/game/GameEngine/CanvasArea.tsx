@@ -10,7 +10,7 @@ interface Props {
   setInCombat: Dispatch<SetStateAction<boolean>>;
   setEnemyInCombat: Dispatch<SetStateAction<any>>;
   onHealPlayer: (npcName: string) => void;
-  openMerchant: () => void; // ✅ Added
+  openMerchant: () => void;
 }
 
 const CanvasArea = ({
@@ -20,7 +20,7 @@ const CanvasArea = ({
   setInCombat,
   setEnemyInCombat,
   onHealPlayer,
-  openMerchant, // ✅ Used here
+  openMerchant,
 }: Props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const enemyImages = useRef<Record<string, HTMLImageElement>>({});
@@ -112,7 +112,6 @@ const CanvasArea = ({
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      // Check NPCs
       for (let npc of area.npcs) {
         const dx = x - npc.x;
         const dy = y - npc.y;
@@ -125,12 +124,10 @@ const CanvasArea = ({
           } else {
             setDialog(npc.dialog);
           }
-
           return;
         }
       }
 
-      // Check Enemies
       for (let enemy of area.enemies ?? []) {
         const dx = x - (enemy.x ?? 0);
         const dy = y - (enemy.y ?? 0);
@@ -155,7 +152,6 @@ const CanvasArea = ({
         }
       }
 
-      // If area has an event
       if (area.event) {
         setDialog(area.event);
       }
@@ -192,14 +188,20 @@ const CanvasArea = ({
   return (
     <canvas
       ref={canvasRef}
-      width={600}
-      height={400}
+      width={800}
+      height={600}
       style={{
+        width: '100%',
+        maxWidth: '960px', // ✅ Limit how wide it gets
+        height: 'auto',
         display: 'block',
-        border: '1px solid #888',
+        margin: '0 auto',   // ✅ Center it
         backgroundColor: '#222',
+        borderRadius: '8px',
+        aspectRatio: '4 / 3',
       }}
     />
+
   );
 };
 

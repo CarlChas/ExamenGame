@@ -21,7 +21,6 @@ import { applyBonuses } from '../../utils/statBonuses';
 import MerchantModal from '../ui/Merchant';
 import ResizableModal from '../ui/ResizeModal';
 
-
 interface Props {
   character: Character;
   onSwitchCharacter: () => void;
@@ -32,6 +31,10 @@ type DirectionKey = 'north' | 'south' | 'east' | 'west';
 type ArmorSlot = 'helmet' | 'chest' | 'back' | 'legs' | 'boots';
 
 const GameEngine = ({ character, onSwitchCharacter }: Props) => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+  const [showStats, setShowStats] = useState(false);
+
   const [area, setArea] = useState<Area>(getArea(0, 0));
   const [dialog, setDialog] = useState<string | null>(null);
   const [inventory, setInventory] = useState<LootItem[]>([]);
@@ -58,10 +61,36 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const hasSyncedPlayerData = useRef(false);
   const skipNextXpEffect = useRef(false);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const isTwoHandedWeapon = (item: LootItem): boolean => {
     const name = item.name.toLowerCase();
     return ['greatsword', 'greataxe', 'bow'].some(type => name.includes(type));
   };
+
+  useEffect(() => {
+    const updateOrientation = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('orientationchange', updateOrientation);
+
+    return () => {
+      window.removeEventListener('resize', updateOrientation);
+      window.removeEventListener('orientationchange', updateOrientation);
+    };
+  }, []);
+
+
   useEffect(() => {
     currentPosRef.current = currentPos;
   }, [currentPos]);
@@ -608,21 +637,71 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
 
 
   return (
-    <div style={{ position: 'relative', display: 'flex', gap: '2rem', justifyContent: 'center' }}>
-      {showMiniMap && (
-        <ResizableModal
-          title="🗺 MiniMap"
-          onClose={() => setShowMiniMap(false)}
-          initialWidth={400}
-          initialHeight={400}
-        >
-          <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
-        </ResizableModal>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: '1rem',
+        justifyContent: 'center',
+        padding: '1rem',
+        flexWrap: 'wrap',
+        position: 'relative'
+      }}
+    >
+      {/* Combination: Floating mini-map in landscape, draggable modal on mobile or when toggled */}
+      {!isLandscape ? (
+        showMiniMap && (
+          <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10 }}>
+            <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
+          </div>
+        )
+      ) : (
+        showMiniMap && (
+          <ResizableModal
+            title="🗺 MiniMap"
+            onClose={() => setShowMiniMap(false)}
+            initialWidth={300}
+            initialHeight={300}
+          >
+            <MiniMap currentX={currentPos.x} currentY={currentPos.y} />
+          </ResizableModal>
+        )
       )}
-      <CharacterStats character={player} />
 
-      <div>
+      {!isMobile || isLandscape || showStats ? (
+        <CharacterStats character={player} />
+      ) : (
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <button
+            onClick={() => setShowStats(prev => !prev)}
+            style={{
+              backgroundColor: '#333',
+              color: '#fff',
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              border: '1px solid #555',
+              cursor: 'pointer',
+            }}
+          >
+            {showStats ? '🙈 Hide Stats' : '🧠 Show Stats'}
+          </button>
+        </div>
+      )}
+
+      <div
+        style={{
+          flex: 1,
+          minWidth: 300,
+          maxWidth: isMobile ? '100%' : '960px',
+          aspectRatio: '16 / 9',
+          margin: '0 auto',
+          overflow: 'visible',
+          backgroundColor: '#223',
+          borderRadius: '8px',
+        }}
+      >
         <h3 style={{ color: 'white', textAlign: 'center' }}>{area.name}</h3>
+
         <CanvasArea
           area={area}
           player={player}
@@ -633,7 +712,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           openMerchant={openMerchant}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '1rem', touchAction: 'manipulation' }}>
           <div />
           {renderMoveButton('north', '⬆️ North')}
           <div />
@@ -645,7 +724,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           <div />
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center', marginTop: '1rem' }}>
           <button onClick={handleSave}>💾 Save</button>
           <button onClick={handleLoad}>📂 Load Game</button>
           <button onClick={onSwitchCharacter}>🔁 Switch Character</button>
@@ -657,7 +736,18 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         </div>
 
         {dialog && (
-          <div style={{ marginTop: '1rem', backgroundColor: '#111', color: '#fff', padding: '1rem', border: '2px solid #555', borderRadius: '8px', textAlign: 'center', maxWidth: '600px' }}>
+          <div
+            style={{
+              marginTop: '1rem',
+              backgroundColor: '#111',
+              color: '#fff',
+              padding: '1rem',
+              border: '2px solid #555',
+              borderRadius: '8px',
+              textAlign: 'center',
+              maxWidth: '100%',
+            }}
+          >
             <p>{dialog}</p>
             <button onClick={() => setDialog(null)}>Close</button>
           </div>
