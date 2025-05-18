@@ -476,6 +476,13 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const equipItem = (item: LootItem) => {
     if (!player) return;
 
+    const requiredLevel = item.level ?? 1;
+    const currentLevel = player.level ?? 1;
+
+    if (requiredLevel > currentLevel) {
+      setDialog(`You must be level ${requiredLevel} to equip ${item.name}.`);
+      return;
+    }
     setPlayer(prev => {
       if (!prev) return null;
 
@@ -791,6 +798,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           onClose={() => setShowInventoryPanel(false)}
           onMinimize={() => setInventoryMinimized(true)}
           onRestore={() => setInventoryMinimized(false)}
+          playerLevel={player.level}
           equipmentSummary={
             <div
               style={{
@@ -871,6 +879,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           isEquipped={isEquipped}
           onUse={handleUseItem}
           onSell={handleSell}
+          playerLevel={player.level}
         />
       </div>
     </div >

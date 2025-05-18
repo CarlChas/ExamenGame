@@ -14,6 +14,7 @@ export interface LootItem {
   material?: string;
   value: number;
   bonusStats?: BonusStat[];
+  level?: number;
   effect?: {
     type: 'heal' | 'mana';
     amount?: number;

@@ -98,7 +98,10 @@ export function generateRandomLoot(playerLevel: number): LootItem {
     let material = '';
     let baseValue = 10;
 
-    const lootLevel = playerLevel;
+    const levelVariance = Math.max(1, Math.floor(playerLevel * 0.2));
+    const minLevel = Math.max(1, playerLevel - levelVariance);
+    const maxLevel = playerLevel + levelVariance;
+    const lootLevel = Math.floor(Math.random() * (maxLevel - minLevel + 1)) + minLevel;
 
     if (type === 'weapon') {
         material = getRandom(materials);
@@ -115,6 +118,7 @@ export function generateRandomLoot(playerLevel: number): LootItem {
             material,
             value: baseValue,
             bonusStats: generateBonusStats(rarity, lootLevel),
+            level: lootLevel,
         };
     }
 
@@ -133,6 +137,7 @@ export function generateRandomLoot(playerLevel: number): LootItem {
             material,
             value: baseValue,
             bonusStats: generateBonusStats(rarity, lootLevel),
+            level: lootLevel,
         };
     }
 
@@ -177,6 +182,7 @@ export function generateRandomLoot(playerLevel: number): LootItem {
             rank,
             value,
             effect,
+            level: lootLevel,
         };
     }
 

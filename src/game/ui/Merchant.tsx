@@ -43,7 +43,12 @@ const MerchantModal = ({
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                         {inventory.map((item) => (
                             <li key={item.id} style={{ marginBottom: '1rem' }}>
-                                <strong>{item.name}</strong> ({item.value ?? 0} gold)
+                                <strong>{item.name}</strong>
+                                <span style={{ fontSize: '0.75rem', color: '#ccc', marginLeft: '0.5rem' }}>
+                                    {typeof item.level === 'number' ? `Lv ${item.level}` : ''}
+                                </span>
+                                <br />
+                                <span style={{ color: '#aaa' }}>{item.value ?? 0} gold</span>
                                 <br />
                                 <button onClick={() => onSell(item)}>💰 Sell</button>
                             </li>
@@ -57,7 +62,12 @@ const MerchantModal = ({
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                         {merchantItems.map((item) => (
                             <li key={item.id} style={{ marginBottom: '1rem' }}>
-                                <strong>{item.name}</strong> ({item.value ?? 0} gold)
+                                <strong>{item.name}</strong>
+                                <span style={{ fontSize: '0.75rem', color: '#ccc', marginLeft: '0.5rem' }}>
+                                    {typeof item.level === 'number' ? `Lv ${item.level}` : ''}
+                                </span>
+                                <br />
+                                <span style={{ color: '#aaa' }}>{item.value ?? 0} gold</span>
                                 <br />
                                 <button onClick={() => onBuy(item)}>🛒 Buy</button>
                             </li>

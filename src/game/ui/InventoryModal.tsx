@@ -16,6 +16,7 @@ interface Props {
     equipmentSummary?: React.ReactNode;
     onMinimize: () => void;
     onRestore: () => void;
+    playerLevel: number;
 }
 
 const InventoryModal = ({
@@ -32,6 +33,7 @@ const InventoryModal = ({
     equipmentSummary,
     onMinimize,
     onRestore,
+    playerLevel,
 }: Props) => {
     return (
         <ResizableModal title="🎒 Inventory" onClose={onClose} onMinimize={onMinimize} onRestore={onRestore} initialWidth={750} initialHeight={500}>
@@ -75,6 +77,7 @@ const InventoryModal = ({
                         onUse={onUse}
                         onSell={onSell}
                         canSell={canSell}
+                        playerLevel={playerLevel}
                     />
                 </div>
             </div>
