@@ -135,9 +135,9 @@ const CombatScreen = ({ player, enemy, onVictory, onDefeat, onFlee }: Props) => 
                 <div style={{ flex: 1 }}>
                     <h3>{player.name}</h3>
                     <StatPanel
-                        currentHp={playerHp} // Use internal playerHp for display during combat
+                        currentHp={playerHp}
                         maxHp={calculateMaxHp(player)}
-                        currentMp={player.currentMp} // MP is not currently dynamic in combat
+                        currentMp={player.currentMp}
                         maxMp={calculateMaxMp(player)}
                         level={player.level}
                         xp={player.xp}

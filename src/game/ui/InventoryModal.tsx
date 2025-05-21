@@ -2,6 +2,8 @@ import ResizableModal from './ResizeModal';
 import Inventory from '../inventory/Inventory';
 import { LootItem } from '../loot';
 
+const MAX_INVENTORY_SIZE = 30;
+
 interface Props {
     items: LootItem[];
     isEquipped: (item: LootItem) => boolean;
@@ -67,6 +69,17 @@ const InventoryModal = ({
                         maxHeight: '100%',
                     }}
                 >
+                    <p
+                        style={{
+                            color: items.length >= MAX_INVENTORY_SIZE ? 'red' : 'lightgray',
+                            fontWeight: 'bold',
+                            marginBottom: '0.5rem',
+                            textAlign: 'right',
+                        }}
+                    >
+                        {items.length} / {MAX_INVENTORY_SIZE}
+                    </p>
+
                     <Inventory
                         items={items}
                         isEquipped={isEquipped}
@@ -80,6 +93,7 @@ const InventoryModal = ({
                         playerLevel={playerLevel}
                     />
                 </div>
+
             </div>
         </ResizableModal>
     );
