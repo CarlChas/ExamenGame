@@ -129,7 +129,7 @@ export function generateRandomLoot(playerLevel: number): LootItem {
         baseValue += Math.floor(Math.random() * 50) + 25;
 
         return {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
             name: baseName,
             type,
             rarity,
@@ -175,7 +175,7 @@ export function generateRandomLoot(playerLevel: number): LootItem {
         const baseName = `${prefix ? prefix + ' ' : ''}${effectName}${suffix ? ' ' + suffix : ''}`;
 
         return {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
             name: baseName,
             type,
             rarity,
@@ -191,7 +191,7 @@ export function generateRandomLoot(playerLevel: number): LootItem {
     baseValue += Math.floor(Math.random() * 15) + 5;
 
     return {
-        id: Date.now().toString(),
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         name: baseName,
         type,
         rarity,
