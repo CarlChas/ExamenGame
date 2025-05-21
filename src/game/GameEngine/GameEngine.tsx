@@ -904,6 +904,7 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           onSell={handleSell}
           onBuy={handleBuy}
           gold={player?.gold ?? 0}
+          onInspect={setInspectedItem}
         />
       )
       }

@@ -7,6 +7,7 @@ interface Props {
     onSell: (item: LootItem) => void;
     onBuy: (item: LootItem) => void;
     gold: number;
+    onInspect: (item: LootItem) => void;
 }
 
 const MerchantModal = ({
@@ -16,6 +17,7 @@ const MerchantModal = ({
     onSell,
     onBuy,
     gold,
+    onInspect,
 }: Props) => {
     return (
         <div
@@ -62,7 +64,18 @@ const MerchantModal = ({
                     <ul style={{ listStyle: 'none', padding: 0 }}>
                         {merchantItems.map((item) => (
                             <li key={item.id} style={{ marginBottom: '1rem' }}>
-                                <strong>{item.name}</strong>
+                                <span
+                                    onClick={() => onInspect(item)}
+                                    style={{
+                                        cursor: 'pointer',
+                                        textDecoration: 'underline',
+                                        color: '#9cf',
+                                        fontWeight: 'bold',
+                                    }}
+                                    title="Click to inspect"
+                                >
+                                    {item.name}
+                                </span>
                                 <span style={{ fontSize: '0.75rem', color: '#ccc', marginLeft: '0.5rem' }}>
                                     {typeof item.level === 'number' ? `Lv ${item.level}` : ''}
                                 </span>
@@ -74,6 +87,7 @@ const MerchantModal = ({
                         ))}
                     </ul>
                 </div>
+
             </div>
 
             <button

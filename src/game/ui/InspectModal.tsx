@@ -18,7 +18,7 @@ const InspectModal = ({ item, onClose }: Props) => {
             color: '#fff',
             padding: '2rem',
             borderRadius: '10px',
-            zIndex: 1000,
+            zIndex: 3000,
             maxWidth: '400px'
         }}>
             <h2 style={{ marginTop: 0 }}>{item.name}</h2>
