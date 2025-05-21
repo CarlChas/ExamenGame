@@ -110,7 +110,7 @@ export function generateRandomLoot(playerLevel: number): LootItem {
         baseValue += Math.floor(Math.random() * 50) + 25;
 
         return {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
             name: baseName,
             type,
             rarity,

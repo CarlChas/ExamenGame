@@ -49,7 +49,9 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
   const [showMerchant, setShowMerchant] = useState(false);
   const [merchantItems, setMerchantItems] = useState<LootItem[]>([]);
   const [inventoryMinimized, setInventoryMinimized] = useState(false);
+  const [pendingLoot, setPendingLoot] = useState<LootItem | null>(null);
 
+  const MAX_INVENTORY_SIZE = 30;
 
   const openMerchant = () => {
     const items = Array.from({ length: 5 }, () => generateRandomLoot(player?.level || 1));
@@ -382,8 +384,15 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
       : null;
 
     if (loot) {
-      setInventory(prev => [...prev, loot]);
-      setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP. You found a ${loot.name}!`);
+      if (inventory.length >= MAX_INVENTORY_SIZE) {
+        // Inventory full – prompt discard
+        setDialog(`${enemyInCombat.name} dropped ${loot.name}, but your inventory is full!`);
+        setPendingLoot(loot); // See step 3
+        setShowInventoryPanel(true); // Let user discard from there
+      } else {
+        setInventory(prev => [...prev, loot]);
+        setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP. You found a ${loot.name}!`);
+      }
     } else {
       setDialog(`${enemyInCombat.name} defeated! You gained ${xpGained} XP.`);
     }
@@ -393,8 +402,15 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
     );
   };
 
+
   const handleBuy = (item: LootItem) => {
     if (!player) return;
+
+    if (inventory.length >= MAX_INVENTORY_SIZE) {
+      setDialog("Your inventory is full. Please discard an item before buying.");
+      return;
+    }
+
     const cost = item.value ?? 0;
 
     if ((player.gold ?? 0) < cost) {
@@ -788,7 +804,18 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
         <InventoryModal
           items={inventory}
           isEquipped={isEquipped}
-          onRemove={(id) => setInventory((prev) => prev.filter((i) => i.id !== id))}
+          onRemove={(id) => {
+            setInventory((prev) => {
+              const newInv = prev.filter((i) => i.id !== id);
+              // If a pending item exists and there's now space
+              if (pendingLoot && newInv.length < MAX_INVENTORY_SIZE) {
+                newInv.push(pendingLoot);
+                setDialog(`You picked up ${pendingLoot.name} after discarding an item.`);
+                setPendingLoot(null);
+              }
+              return newInv;
+            });
+          }}
           onInspect={setInspectedItem}
           onEquip={equipItem}
           onUnequip={unequipItem}
@@ -838,7 +865,33 @@ const GameEngine = ({ character, onSwitchCharacter }: Props) => {
           }
         />
       )}
-
+      {pendingLoot && (
+        <div style={{
+          backgroundColor: '#111',
+          color: '#fff',
+          padding: '1rem',
+          border: '2px solid #555',
+          borderRadius: '8px',
+          textAlign: 'center',
+          marginTop: '1rem'
+        }}>
+          <p>Your inventory is full! You found <strong>{pendingLoot.name}</strong>. Choose an item to discard or leave the loot behind.</p>
+          <div style={{ marginTop: '1rem' }}>
+            <button onClick={() => setShowInventoryPanel(true)}>
+              🧺 Open Inventory
+            </button>
+            <button
+              onClick={() => {
+                setDialog(`${pendingLoot.name} was left behind.`);
+                setPendingLoot(null);
+              }}
+              style={{ marginLeft: '1rem' }}
+            >
+              ❌ Leave Item
+            </button>
+          </div>
+        </div>
+      )}
 
       {inspectedItem && (
         <InspectModal item={inspectedItem} onClose={() => setInspectedItem(null)} />
