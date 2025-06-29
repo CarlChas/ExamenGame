@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 interface Props {
+    characters: any[];
     onSelect: (char: any) => void;
     onCreateNew: () => void;
     onLogout: () => void;

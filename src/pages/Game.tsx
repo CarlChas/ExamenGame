@@ -17,24 +17,53 @@ const Game = () => {
     };
 
     useEffect(() => {
-        const stored = localStorage.getItem('currentUser');
-        if (!stored) {
-            navigate('/');
-            return;
-        }
+        const init = async () => {
+            const stored = localStorage.getItem('currentUser');
+            if (!stored) {
+                navigate('/');
+                return;
+            }
 
-        fetchCharacters(stored);
+            await fetchCharacters(stored);
 
-        const selectedChar = localStorage.getItem('selectedCharacter');
-        if (selectedChar) {
-            setSelectedCharacter(JSON.parse(selectedChar));
-        }
+            const selectedChar = localStorage.getItem('selectedCharacter');
+            if (!selectedChar) return;
+
+            const parsedChar = JSON.parse(selectedChar);
+
+            try {
+                const res = await fetch(`http://localhost:3001/api/users/character/${parsedChar.id}`);
+                const data = await res.json();
+
+                if (!res.ok || data.redirect) {
+                    console.warn('Karaktären kunde inte laddas, tar bort från localStorage.');
+                    localStorage.removeItem('selectedCharacter');
+                    return;
+                }
+
+                // säkerställ fallback-data
+                const loadedChar = {
+                    ...data,
+                    pos: data.pos ?? { x: 0, y: 0 },
+                    map: data.map ?? {},
+                    inventory: data.inventory ?? [],
+                    currentHp: data.currentHp ?? 10,
+                    currentMp: data.currentMp ?? 10,
+                };
+
+                setSelectedCharacter(loadedChar);
+            } catch (err) {
+                console.error('Fel vid laddning av karaktär:', err);
+                localStorage.removeItem('selectedCharacter');
+            }
+        };
+
+        init();
     }, [navigate]);
 
     const handleSelectCharacter = async (char: any) => {
         const saveKey = `gameSave:${char.name}`;
 
-        // Try to load fresh progress from the database
         const res = await fetch(`http://localhost:3001/api/users/load/${user.username}`);
         const characters = await res.json();
         const updated = characters.find((c: any) => c.name === char.name);
@@ -57,7 +86,6 @@ const Game = () => {
             player: loadedChar,
         }));
     };
-
 
     const handleCharacterCreate = async (char: any) => {
         setSelectedCharacter(char);
@@ -86,13 +114,10 @@ const Game = () => {
 
     if (selectedCharacter) {
         return (
-            <>
-                {/* <button onClick={handleLogout}>Log Out</button> */}
-                <GameEngine
-                    character={selectedCharacter}
-                    onSwitchCharacter={() => setSelectedCharacter(null)}
-                />
-            </>
+            <GameEngine
+                character={selectedCharacter}
+                onSwitchCharacter={() => setSelectedCharacter(null)}
+            />
         );
     }
 
