@@ -29,8 +29,8 @@ model Character {
   lineage    String
   level      Int
   xp         Int
-  currentHp  Int
-  currentMp  Int
+  currentHp  Int?
+  currentMp  Int?
   maxHp      Int?
   maxMp      Int?
 
