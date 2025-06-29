@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
+// ✅ Lägg till korrekt import för normalizeCharacter
+import { normalizeCharacter } from '../../../src/game/GameEngine/stats';
 
 const router = Router();
 const prisma = new PrismaClient();
 
+// 🧍 Register
 router.post('/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password are required' });
@@ -22,9 +26,7 @@ router.post('/register', async (req, res) => {
   res.json({ message: 'User registered', user: { id: user.id, username: user.username } });
 });
 
-
-
-// 🧑 Create or login user
+// 🔐 Login
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
@@ -34,7 +36,7 @@ router.post('/login', async (req, res) => {
     select: {
       id: true,
       username: true,
-      password: true, // 👈 this line is key
+      password: true,
     }
   });
 
@@ -46,9 +48,7 @@ router.post('/login', async (req, res) => {
   res.json({ id: user.id, username: user.username });
 });
 
-
-// 💾 Save characters
-// Updated /save route
+// 💾 Save character
 router.post('/save', async (req, res) => {
   const { username, character } = req.body;
   if (!username || !character) return res.status(400).json({ error: 'Missing data' });
@@ -56,7 +56,6 @@ router.post('/save', async (req, res) => {
   const user = await prisma.user.findUnique({ where: { username } });
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  // Delete existing character with same name (or use id for better integrity)
   await prisma.character.deleteMany({
     where: {
       userId: user.id,
@@ -64,16 +63,23 @@ router.post('/save', async (req, res) => {
     },
   });
 
+  // ✅ Normalisera karaktären innan sparning
+  const normalized = normalizeCharacter(character);
+
   const newChar = await prisma.character.create({
     data: {
-      ...character,
+      ...normalized,
       userId: user.id,
+      inventory: JSON.parse(JSON.stringify(normalized.inventory)),
+      map: JSON.parse(JSON.stringify(normalized.map)),
+      pos: JSON.parse(JSON.stringify(normalized.pos)),
+      equipment: JSON.parse(JSON.stringify(normalized.equipment)),
+      baseStats: JSON.parse(JSON.stringify(normalized.baseStats)),
     },
   });
 
   res.json({ success: true, character: newChar });
 });
-
 
 // 📥 Load characters
 router.get('/load/:username', async (req, res) => {
@@ -89,7 +95,7 @@ router.get('/load/:username', async (req, res) => {
   res.json(user.characters);
 });
 
-// 💾 Save progress for a specific character
+// 💾 Save progress
 router.post('/save-progress', async (req, res) => {
   const { username, characterId, progress } = req.body;
 
@@ -132,8 +138,7 @@ router.post('/save-progress', async (req, res) => {
   }
 });
 
-
-// 🗑️ Delete character by ID
+// 🗑️ Delete character
 router.delete('/delete-character/:id', async (req, res) => {
   const characterId = parseInt(req.params.id);
   if (isNaN(characterId)) return res.status(400).json({ error: 'Invalid character ID' });
@@ -148,6 +153,5 @@ router.delete('/delete-character/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete character' });
   }
 });
-
 
 export default router;
